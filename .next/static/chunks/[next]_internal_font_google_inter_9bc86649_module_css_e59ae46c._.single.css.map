@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[next]/internal/font/google/inter_9bc86649.module.css"],"sourcesContent":[".className {\n    font-family: 'Inter', system-ui, arial;\n    font-style: normal;\n\n}\n.variable {\n    --font-inter: 'Inter', system-ui, arial;\n}\n"],"names":[],"mappings":"AAAA;;;;;AAKA","ignoreList":[0]}}]
+}

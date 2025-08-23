@@ -1,0 +1,414 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id                   String       @id @default(cuid())
+  name                 String
+  domain               String       @unique
+  plan                 PlanoTenant  @default(DESPACHANTE_SOLO)
+  status               StatusTenant @default(TRIAL)
+  registroProfissional String?
+  cnpj                 String?
+  endereco             String?
+  telefone             String?
+  email                String?
+  settings             Json?
+  stripeCustomerId     String?      @unique
+  subscriptionId       String?      @unique
+  subscriptionStatus   String?
+  trialEndsAt          DateTime?
+  maxUsers             Int          @default(1)
+  maxCustomers         Int          @default(100)
+  maxProcesses         Int          @default(300)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  customers            Customer[]
+  processes            Process[]
+  transactions         Transacao[]
+  users                User[]
+  vehicles             Veiculo[]
+
+  @@map("tenants")
+}
+
+model User {
+  id                   String    @id @default(cuid())
+  tenantId             String
+  name                 String?
+  email                String    @unique
+  emailVerified        DateTime?
+  image                String?
+  password             String?
+  role                 String    @default("USER")
+  registroProfissional String?
+  telefone             String?
+  status               String    @default("ATIVO")
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  accounts             Account[]
+  processosResponsavel Process[] @relation("ProcessoResponsavel")
+  sessions             Session[]
+  tenant               Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
+}
+
+model Customer {
+  id                String        @id @default(cuid())
+  tenantId          String
+  name              String
+  email             String?
+  phone             String
+  cpfCnpj           String
+  tipoCliente       TipoCliente   @default(FISICO)
+  endereco          String?
+  numero            String?
+  complemento       String?
+  bairro            String?
+  cidade            String?
+  estado            String?       @default("SP")
+  cep               String?
+  rg                String?
+  orgaoEmissor      String?
+  profissao         String?
+  estadoCivil       String?
+  razaoSocial       String?
+  nomeFantasia      String?
+  inscricaoEstadual String?
+  status            StatusCliente @default(ATIVO)
+  observacoes       String?
+  tags              String[]
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  appointments      Appointment[]
+  tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  processes         Process[]
+  quotes            Quote[]
+  transacoes        Transacao[]
+  veiculos          Veiculo[]
+
+  @@unique([cpfCnpj, tenantId])
+  @@map("customers")
+}
+
+model Veiculo {
+  id          String        @id @default(cuid())
+  tenantId    String
+  customerId  String
+  placa       String
+  renavam     String?
+  chassi      String?
+  marca       String
+  modelo      String
+  ano         Int
+  anoModelo   Int
+  cor         String
+  combustivel String
+  categoria   String
+  status      StatusVeiculo @default(ATIVO)
+  observacoes String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  processes   Process[]
+  customer    Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([placa, tenantId])
+  @@unique([renavam, tenantId])
+  @@map("veiculos")
+}
+
+model Process {
+  id              String          @id @default(cuid())
+  tenantId        String
+  numero          String
+  customerId      String
+  veiculoId       String?
+  responsavelId   String
+  tipoServico     TipoServico
+  titulo          String
+  descricao       String?
+  status          StatusProcesso  @default(AGUARDANDO_DOCUMENTOS)
+  prioridade      Prioridade      @default(MEDIA)
+  dataInicio      DateTime        @default(now())
+  prazoLegal      DateTime?
+  dataFinalizacao DateTime?
+  valorTotal      Float           @default(0)
+  valorTaxas      Float           @default(0)
+  valorServico    Float           @default(0)
+  statusPagamento StatusPagamento @default(PENDENTE)
+  observacoes     String?
+  notasInternas   String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  documentos      Documento[]
+  customer        Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  responsavel     User            @relation("ProcessoResponsavel", fields: [responsavelId], references: [id])
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  veiculo         Veiculo?        @relation(fields: [veiculoId], references: [id])
+  timeline        TimelineEvent[]
+  transacoes      Transacao[]
+
+  @@unique([numero, tenantId])
+  @@map("processes")
+}
+
+model Documento {
+  id            String          @id @default(cuid())
+  processoId    String
+  tipo          TipoDocumento
+  nome          String
+  arquivo       String
+  tamanho       Int
+  hash          String
+  status        StatusDocumento @default(PENDENTE)
+  dataUpload    DateTime        @default(now())
+  dataExpiracao DateTime?
+  observacoes   String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  processo      Process         @relation(fields: [processoId], references: [id], onDelete: Cascade)
+
+  @@map("documentos")
+}
+
+model TimelineEvent {
+  id         String     @id @default(cuid())
+  processoId String
+  tipo       TipoEvento
+  titulo     String
+  descricao  String?
+  autor      String
+  createdAt  DateTime   @default(now())
+  processo   Process    @relation(fields: [processoId], references: [id], onDelete: Cascade)
+
+  @@map("timeline_events")
+}
+
+model Transacao {
+  id                String          @id @default(cuid())
+  tenantId          String
+  numero            String
+  processoId        String?
+  customerId        String?
+  tipo              TipoTransacao
+  categoria         String
+  descricao         String
+  valor             Float
+  dataVencimento    DateTime
+  dataPagamento     DateTime?
+  status            StatusTransacao @default(PENDENTE)
+  metodoPagamento   String?
+  referenciaExterna String?
+  comprovante       String?
+  observacoes       String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  customer          Customer?       @relation(fields: [customerId], references: [id])
+  processo          Process?        @relation(fields: [processoId], references: [id])
+  tenant            Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([numero, tenantId])
+  @@map("transacoes")
+}
+
+model Quote {
+  id          String   @id @default(cuid())
+  customerId  String
+  serviceType String
+  vehicleType String
+  totalPrice  Float
+  status      String   @default("PENDING")
+  validUntil  DateTime
+  items       Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("quotes")
+}
+
+model Appointment {
+  id              String   @id @default(cuid())
+  customerId      String
+  title           String
+  description     String?
+  serviceType     String
+  appointmentType String
+  startTime       DateTime
+  endTime         DateTime
+  status          String   @default("SCHEDULED")
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  customer        Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("appointments")
+}
+
+enum TipoCliente {
+  FISICO
+  JURIDICO
+}
+
+enum StatusCliente {
+  ATIVO
+  INATIVO
+  SUSPENSO
+}
+
+enum StatusVeiculo {
+  ATIVO
+  VENDIDO
+  SINISTRADO
+  FURTO
+}
+
+enum TipoServico {
+  LICENCIAMENTO
+  TRANSFERENCIA
+  PRIMEIRO_EMPLACAMENTO
+  SEGUNDA_VIA
+  DESBLOQUEIO
+  ALTERACAO_CARACTERISTICAS
+  BAIXA_VEICULO
+  INCLUSAO_ALIENACAO
+  EXCLUSAO_ALIENACAO
+  MUDANCA_MUNICIPIO
+  MUDANCA_UF
+  REGULARIZACAO_MULTAS
+}
+
+enum PlanoTenant {
+  DESPACHANTE_SOLO
+  ESCRITORIO_PEQUENO
+  ESCRITORIO_GRANDE
+}
+
+enum StatusTenant {
+  ACTIVE
+  TRIAL
+  SUSPENDED
+  CANCELLED
+}
+
+enum StatusProcesso {
+  AGUARDANDO_DOCUMENTOS
+  DOCUMENTOS_RECEBIDOS
+  EM_ANALISE
+  AGUARDANDO_PAGAMENTO
+  PAGAMENTO_CONFIRMADO
+  EM_PROCESSAMENTO
+  AGUARDANDO_VISTORIA
+  VISTORIA_REALIZADA
+  FINALIZADO
+  CANCELADO
+  ERRO
+}
+
+enum Prioridade {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum StatusPagamento {
+  PENDENTE
+  PAGO
+  PARCIAL
+  VENCIDO
+  CANCELADO
+}
+
+enum TipoDocumento {
+  CPF
+  RG
+  CNH
+  ATPV
+  CRV
+  CRLV
+  COMPROVANTE_RESIDENCIA
+  LAUDO_VISTORIA
+  NOTA_FISCAL
+  PROCURACAO
+  OUTROS
+}
+
+enum StatusDocumento {
+  PENDENTE
+  APROVADO
+  REJEITADO
+  EXPIRADO
+}
+
+enum TipoEvento {
+  CRIACAO
+  ATUALIZACAO_STATUS
+  DOCUMENTO_ADICIONADO
+  DOCUMENTO_APROVADO
+  DOCUMENTO_REJEITADO
+  PAGAMENTO_RECEBIDO
+  VISTORIA_AGENDADA
+  VISTORIA_REALIZADA
+  PROCESSO_FINALIZADO
+  OBSERVACAO_ADICIONADA
+  SISTEMA
+}
+
+enum TipoTransacao {
+  RECEITA
+  DESPESA
+}
+
+enum StatusTransacao {
+  PENDENTE
+  PAGO
+  VENCIDO
+  CANCELADO
+  ESTORNADO
+}
