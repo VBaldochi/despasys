@@ -1,0 +1,3 @@
+{
+  "/api/fipe/veiculo/[tipo]/[marca]/route": "app/api/fipe/veiculo/[tipo]/[marca]/route.js"
+}

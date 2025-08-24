@@ -3,13 +3,11 @@
 
 export interface MarcaFipe {
   nome: string;
-  codigo: string;
+  valor: string;
 }
 
 export interface VeiculoFipe {
-  nome: string;
-  codigo: string;
-  codigoFipe: string;
+  modelo: string;
 }
 
 export interface PrecoFipe {
@@ -45,14 +43,16 @@ class FipeService {
         params.append('tabela_referencia', tabelaReferencia.toString());
       }
       
-      const url = `${this.baseUrl}/marcas/v1/${tipoVeiculo}${params.toString() ? `?${params}` : ''}`;
+      const url = `/api/fipe/marcas/${tipoVeiculo}${params.toString() ? `?${params}` : ''}`;
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`Erro ao buscar marcas: ${response.statusText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Erro ao buscar marcas: ${response.statusText}`);
       }
       
-      return await response.json();
+      const data = await response.json();
+      return data.marcas || [];
     } catch (error) {
       console.error('Erro na consulta de marcas FIPE:', error);
       throw new Error('Falha ao consultar marcas na tabela FIPE');
@@ -73,14 +73,16 @@ class FipeService {
         params.append('tabela_referencia', tabelaReferencia.toString());
       }
       
-      const url = `${this.baseUrl}/veiculos/v1/${tipoVeiculo}/${codigoMarca}${params.toString() ? `?${params}` : ''}`;
+      const url = `/api/fipe/veiculo/${tipoVeiculo}/${codigoMarca}${params.toString() ? `?${params}` : ''}`;
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`Erro ao buscar veículos: ${response.statusText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Erro ao buscar veículos: ${response.statusText}`);
       }
       
-      return await response.json();
+      const data = await response.json();
+      return Array.isArray(data.veiculos) ? data.veiculos : [data.veiculos];
     } catch (error) {
       console.error('Erro na consulta de veículos FIPE:', error);
       throw new Error('Falha ao consultar veículos na tabela FIPE');
@@ -97,14 +99,16 @@ class FipeService {
         params.append('tabela_referencia', tabelaReferencia.toString());
       }
       
-      const url = `${this.baseUrl}/preco/v1/${codigoFipe}${params.toString() ? `?${params}` : ''}`;
+      const url = `/api/fipe/preco/${codigoFipe}${params.toString() ? `?${params}` : ''}`;
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`Erro ao buscar preço: ${response.statusText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Erro ao buscar preço: ${response.statusText}`);
       }
       
-      return await response.json();
+      const data = await response.json();
+      return Array.isArray(data.preco) ? data.preco : [data.preco];
     } catch (error) {
       console.error('Erro na consulta de preço FIPE:', error);
       throw new Error('Falha ao consultar preço na tabela FIPE');
@@ -116,14 +120,16 @@ class FipeService {
    */
   async getTabelas(): Promise<TabelaFipe[]> {
     try {
-      const url = `${this.baseUrl}/tabelas/v1`;
+      const url = `/api/fipe/tabelas`;
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`Erro ao buscar tabelas: ${response.statusText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Erro ao buscar tabelas: ${response.statusText}`);
       }
       
-      return await response.json();
+      const data = await response.json();
+      return data.tabelas || [];
     } catch (error) {
       console.error('Erro na consulta de tabelas FIPE:', error);
       throw new Error('Falha ao consultar tabelas FIPE');
@@ -155,9 +161,9 @@ class FipeService {
       }
 
       // 2. Buscar veículos da marca
-      const veiculos = await this.getVeiculos(tipoVeiculo, marca.codigo);
+      const veiculos = await this.getVeiculos(tipoVeiculo, marca.valor);
       const veiculo = veiculos.find(v => 
-        v.nome.toLowerCase().includes(nomeVeiculo.toLowerCase())
+        v.modelo.toLowerCase().includes(nomeVeiculo.toLowerCase())
       );
       
       if (!veiculo) {
@@ -165,7 +171,9 @@ class FipeService {
       }
 
       // 3. Buscar preço do veículo
-      const preco = await this.getPreco(veiculo.codigoFipe);
+      // Nota: A API Brasil não tem endpoint direto para preços por veículo específico
+      // Esta funcionalidade requer implementação personalizada
+      const preco = null; // await this.getPreco(veiculo.codigoFipe);
       
       return { marca, veiculo, preco };
       

@@ -1,6 +1,15 @@
 // Serviços de integração com CEP da BrasilAPI
 // Útil para validação de endereços e auto-preenchimento
 
+export interface CepResponse {
+  cep: string;
+  logradouro: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
+  ddd: string;
+}
+
 export interface EnderecoCep {
   cep: string;
   state: string;
@@ -26,30 +35,31 @@ class CepService {
   /**
    * Busca endereço por CEP (versão 1)
    */
-  async buscarCep(cep: string): Promise<EnderecoCep> {
-    const cepLimpo = this.limparCep(cep);
+  async buscarCep(cep: string): Promise<CepResponse> {
+    const cepLimpo = cep.replace(/\D/g, '');
     
-    if (!this.validarCep(cepLimpo)) {
-      throw new Error('CEP inválido. Use o formato 12345678 ou 12345-678');
+    if (cepLimpo.length !== 8) {
+      throw new Error('CEP deve ter 8 dígitos');
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/v1/${cepLimpo}`);
+      const response = await fetch(`/api/cep?cep=${cepLimpo}`);
       
       if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error('CEP não encontrado');
-        }
-        throw new Error(`Erro ao buscar CEP: ${response.statusText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao buscar CEP');
       }
+
+      const data = await response.json();
       
-      return await response.json();
-    } catch (error) {
-      console.error('Erro na consulta de CEP:', error);
-      if (error instanceof Error) {
-        throw error;
+      if (!data.success) {
+        throw new Error('CEP não encontrado');
       }
-      throw new Error('Falha ao consultar CEP');
+
+      return data.endereco;
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error);
+      throw error;
     }
   }
 

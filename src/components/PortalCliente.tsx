@@ -35,10 +35,11 @@ import {
   ProcessNotification
 } from '@/store/processoStore'
 import ChatWidget from './ChatWidget'
+import { brasilApi } from '@/lib/brasilapi'
 
 const searchSchema = z.object({
   phone: z.string().optional(),
-  cpf: z.string().min(11, 'CPF deve ter 11 dígitos').optional(),
+  cpf: z.string().optional(),
   processId: z.string().optional()
 }).refine(data => data.phone || data.cpf || data.processId, {
   message: "Informe pelo menos um campo: telefone, CPF ou código do processo",
@@ -51,6 +52,11 @@ export default function ClientPortal() {
   const [showDetails, setShowDetails] = useState<string | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [customerPhone, setCustomerPhone] = useState('')
+  const [cpfValidation, setCpfValidation] = useState<{
+    status: 'vazio' | 'incompleto' | 'invalido' | 'valido';
+    mensagem: string;
+    formatado: string;
+  }>({ status: 'vazio', mensagem: '', formatado: '' })
   
   const {
     processes,
@@ -75,7 +81,20 @@ export default function ClientPortal() {
 
   const [customerProcesses, setCustomerProcesses] = useState<Process[]>([])
 
+  // Funções de validação e formatação com Brasil API
+  const handleCpfChange = (value: string) => {
+    const validation = brasilApi.formularios.validarCpfTempoReal(value)
+    setCpfValidation(validation)
+    return validation.formatado
+  }
+
   const onSubmit = async (data: SearchForm) => {
+    // Validar CPF se fornecido
+    if (data.cpf && cpfValidation.status !== 'valido') {
+      alert('Por favor, digite um CPF válido')
+      return
+    }
+
     // Simular busca por telefone ou CPF
     const foundProcesses = processes.filter(process => {
       const phoneMatch = data.phone && process.customerPhone.replace(/\D/g, '') === data.phone.replace(/\D/g, '')
@@ -170,15 +189,34 @@ export default function ClientPortal() {
               <input
                 {...register('cpf')}
                 type="text"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-blue-500 ${
+                  cpfValidation.status === 'valido' 
+                    ? 'border-green-300 focus:ring-green-500' 
+                    : cpfValidation.status === 'invalido' 
+                    ? 'border-red-300 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
                 placeholder="123.456.789-00"
                 maxLength={14}
                 onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, '')
-                  const formatted = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+                  const formatted = handleCpfChange(e.target.value)
                   e.target.value = formatted
                 }}
               />
+              {cpfValidation.status !== 'vazio' && (
+                <div className={`mt-1 text-sm flex items-center gap-1 ${
+                  cpfValidation.status === 'valido' 
+                    ? 'text-green-600' 
+                    : cpfValidation.status === 'invalido' 
+                    ? 'text-red-600' 
+                    : 'text-gray-600'
+                }`}>
+                  {cpfValidation.status === 'valido' && <CheckCircleIcon className="w-4 h-4" />}
+                  {cpfValidation.status === 'invalido' && <XCircleIcon className="w-4 h-4" />}
+                  {cpfValidation.status === 'incompleto' && <ClockIcon className="w-4 h-4" />}
+                  {cpfValidation.mensagem}
+                </div>
+              )}
               {errors.cpf && (
                 <p className="mt-1 text-sm text-red-600">{errors.cpf.message}</p>
               )}

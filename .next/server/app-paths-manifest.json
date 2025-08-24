@@ -1,10 +1,10 @@
 {
-  "/admin/dashboard/page": "app/admin/dashboard/page.js",
+  "/(app)/fipe/page": "app/(app)/fipe/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/api/customers/route": "app/api/customers/route.js",
-  "/api/dashboard/stats/route": "app/api/dashboard/stats/route.js",
-  "/api/processes/route": "app/api/processes/route.js",
+  "/api/fipe/marcas/[tipo]/route": "app/api/fipe/marcas/[tipo]/route.js",
+  "/api/fipe/precos-reais/route": "app/api/fipe/precos-reais/route.js",
+  "/api/fipe/veiculo/[tipo]/[marca]/route": "app/api/fipe/veiculo/[tipo]/[marca]/route.js",
   "/api/tenant/[domain]/route": "app/api/tenant/[domain]/route.js",
-  "/auth/login/page": "app/auth/login/page.js",
-  "/page": "app/page.js"
+  "/favicon.ico/route": "app/favicon.ico/route.js"
 }

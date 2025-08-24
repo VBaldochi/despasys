@@ -19,6 +19,7 @@ export default function Header() {
     { href: '#calculator', label: 'Calculadora' },
     { href: '#agendamento', label: 'Agendamento' },
     { href: '/consultas', label: 'Consultas' },
+    { href: '/fipe', label: 'Consulta FIPE' },
     { href: '/processos', label: 'Meus Processos' },
     { href: '#about', label: 'Sobre' },
     { href: '#contact', label: 'Contato' },

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { X, User, Building, Phone, Mail, MapPin, Save, FileText } from 'lucide-react'
+import { X, User, Building, Phone, Mail, MapPin, Save, FileText, CheckCircle, XCircle, Clock, Loader } from 'lucide-react'
+import { brasilApi } from '@/lib/brasilapi'
 
 interface NovoClienteModalProps {
   isOpen: boolean
@@ -17,14 +18,149 @@ export default function NovoClienteModal({ isOpen, onClose, onSave }: NovoClient
     phone: '',
     email: '',
     endereco: '',
+    numero: '',
     cidade: '',
     cep: '',
     observacoes: ''
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [cpfCnpjValidation, setCpfCnpjValidation] = useState<{
+    status: 'vazio' | 'incompleto' | 'invalido' | 'valido';
+    mensagem: string;
+    formatado: string;
+  }>({ status: 'vazio', mensagem: '', formatado: '' })
+  const [cepValidation, setCepValidation] = useState<{
+    status: 'vazio' | 'incompleto' | 'invalido' | 'valido' | 'carregando';
+    mensagem: string;
+  }>({ status: 'vazio', mensagem: '' })
+  const [cepLoading, setCepLoading] = useState(false)
+  const [empresaInfo, setEmpresaInfo] = useState<any>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Validação de CPF/CNPJ em tempo real
+  const handleCpfCnpjChange = async (value: string) => {
+    if (formData.tipoCliente === 'FISICO') {
+      const validation = brasilApi.formularios.validarCpfTempoReal(value)
+      setCpfCnpjValidation(validation)
+      return validation.formatado
+    } else {
+      const formatted = brasilApi.formatadores.cnpj(value)
+      
+      if (formatted.replace(/\D/g, '').length === 14) {
+        setCpfCnpjValidation({
+          status: 'incompleto',
+          mensagem: 'Validando CNPJ...',
+          formatado: formatted
+        })
+        
+        try {
+          const resultado = await brasilApi.buscarEmpresaPorCnpj(formatted)
+          if (resultado.success && resultado.empresa) {
+            setEmpresaInfo(resultado.empresa)
+            setCpfCnpjValidation({
+              status: 'valido',
+              mensagem: `CNPJ válido - ${resultado.empresa.razao_social}`,
+              formatado: formatted
+            })
+            // Auto-preencher dados da empresa
+            setFormData(prev => ({
+              ...prev,
+              name: resultado.empresa!.razao_social,
+              endereco: `${resultado.empresa!.logradouro}, ${resultado.empresa!.numero}`,
+              cidade: resultado.empresa!.municipio,
+              cep: resultado.empresa!.cep
+            }))
+          } else {
+            setCpfCnpjValidation({
+              status: 'invalido',
+              mensagem: 'CNPJ não encontrado na Receita Federal',
+              formatado: formatted
+            })
+            setEmpresaInfo(null)
+          }
+        } catch (error) {
+          const valido = brasilApi.validadores.cnpj(formatted)
+          setCpfCnpjValidation({
+            status: valido ? 'valido' : 'invalido',
+            mensagem: valido ? 'CNPJ válido' : 'CNPJ inválido',
+            formatado: formatted
+          })
+        }
+      } else if (formatted.replace(/\D/g, '').length > 0) {
+        setCpfCnpjValidation({
+          status: 'incompleto',
+          mensagem: `${formatted.replace(/\D/g, '').length}/14 dígitos`,
+          formatado: formatted
+        })
+        setEmpresaInfo(null)
+      } else {
+        setCpfCnpjValidation({
+          status: 'vazio',
+          mensagem: '',
+          formatado: ''
+        })
+        setEmpresaInfo(null)
+      }
+      
+      return formatted
+    }
+  }
+
+  // Auto-completar endereço por CEP
+  const handleCepChange = async (cep: string) => {
+    const cepLimpo = cep.replace(/\D/g, '')
+    
+    if (cepLimpo.length === 8) {
+      setCepLoading(true)
+      setCepValidation({ status: 'carregando', mensagem: 'Buscando endereço...' })
+      
+      try {
+        const resultado = await brasilApi.autocompletarEndereco(cep)
+        
+        if (resultado.success && resultado.endereco) {
+          setCepValidation({ status: 'valido', mensagem: 'CEP válido' })
+          setFormData(prev => ({
+            ...prev,
+            endereco: resultado.endereco!.logradouro,
+            cidade: resultado.endereco!.cidade
+          }))
+        } else {
+          setCepValidation({ 
+            status: 'invalido', 
+            mensagem: resultado.erro?.includes('indisponível') || resultado.erro?.includes('504') ? 
+              'Serviço temporariamente indisponível. Tente novamente.' :
+              'CEP não encontrado. Verifique o número digitado.' 
+          })
+        }
+      } catch (error) {
+        console.error('Erro ao buscar CEP:', error)
+        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+        
+        if (errorMessage.includes('indisponível') || errorMessage.includes('504') || errorMessage.includes('timeout')) {
+          setCepValidation({ 
+            status: 'invalido', 
+            mensagem: 'Serviço temporariamente indisponível. Tente novamente em alguns segundos.' 
+          })
+        } else {
+          setCepValidation({ 
+            status: 'invalido', 
+            mensagem: 'Erro ao buscar CEP. Verifique sua conexão e tente novamente.' 
+          })
+        }
+      } finally {
+        setCepLoading(false)
+      }
+    } else if (cepLimpo.length > 0) {
+      setCepValidation({ 
+        status: 'incompleto', 
+        mensagem: `${cepLimpo.length}/8 dígitos` 
+      })
+    } else {
+      setCepValidation({ status: 'vazio', mensagem: '' })
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     // Validação básica
@@ -34,13 +170,9 @@ export default function NovoClienteModal({ isOpen, onClose, onSave }: NovoClient
     if (!formData.cpfCnpj.trim()) newErrors.cpfCnpj = 'CPF/CNPJ é obrigatório'
     if (!formData.phone.trim()) newErrors.phone = 'Telefone é obrigatório'
     
-    // Validação de CPF/CNPJ básica
-    const cpfCnpjLimpo = formData.cpfCnpj.replace(/\D/g, '')
-    if (formData.tipoCliente === 'FISICO' && cpfCnpjLimpo.length !== 11) {
-      newErrors.cpfCnpj = 'CPF deve ter 11 dígitos'
-    }
-    if (formData.tipoCliente === 'JURIDICO' && cpfCnpjLimpo.length !== 14) {
-      newErrors.cpfCnpj = 'CNPJ deve ter 14 dígitos'
+    // Validação com Brasil API
+    if (cpfCnpjValidation.status !== 'valido') {
+      newErrors.cpfCnpj = 'CPF/CNPJ inválido'
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -54,7 +186,8 @@ export default function NovoClienteModal({ isOpen, onClose, onSave }: NovoClient
       ...formData,
       status: 'ATIVO',
       createdAt: new Date().toISOString().split('T')[0],
-      processosAtivos: 0
+      processosAtivos: 0,
+      empresaInfo: empresaInfo // Incluir dados da empresa se CNPJ
     }
 
     onSave(novoCliente)
@@ -67,33 +200,16 @@ export default function NovoClienteModal({ isOpen, onClose, onSave }: NovoClient
       phone: '',
       email: '',
       endereco: '',
+      numero: '',
       cidade: '',
       cep: '',
       observacoes: ''
     })
     setErrors({})
+    setCpfCnpjValidation({ status: 'vazio', mensagem: '', formatado: '' })
+    setCepValidation({ status: 'vazio', mensagem: '' })
+    setEmpresaInfo(null)
     onClose()
-  }
-
-  const formatCpfCnpj = (value: string) => {
-    const numero = value.replace(/\D/g, '')
-    
-    if (formData.tipoCliente === 'FISICO') {
-      // Formato CPF: 000.000.000-00
-      return numero
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-        .slice(0, 14)
-    } else {
-      // Formato CNPJ: 00.000.000/0000-00
-      return numero
-        .replace(/(\d{2})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d)/, '$1/$2')
-        .replace(/(\d{4})(\d{1,2})/, '$1-$2')
-        .slice(0, 18)
-    }
   }
 
   const formatPhone = (value: string) => {
@@ -111,11 +227,6 @@ export default function NovoClienteModal({ isOpen, onClose, onSave }: NovoClient
         .replace(/(\d{5})(\d{1,4})/, '$1-$2')
         .slice(0, 15)
     }
-  }
-
-  const formatCep = (value: string) => {
-    const numero = value.replace(/\D/g, '')
-    return numero.replace(/(\d{5})(\d{1,3})/, '$1-$2').slice(0, 9)
   }
 
   if (!isOpen) return null
@@ -153,7 +264,12 @@ export default function NovoClienteModal({ isOpen, onClose, onSave }: NovoClient
                   name="tipoCliente"
                   value="FISICO"
                   checked={formData.tipoCliente === 'FISICO'}
-                  onChange={(e) => setFormData({ ...formData, tipoCliente: e.target.value as 'FISICO', cpfCnpj: '' })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, tipoCliente: e.target.value as 'FISICO', cpfCnpj: '' })
+                    setCpfCnpjValidation({ status: 'vazio', mensagem: '', formatado: '' })
+                    setCepValidation({ status: 'vazio', mensagem: '' })
+                    setEmpresaInfo(null)
+                  }}
                   className="text-blue-600 focus:ring-blue-500"
                 />
                 <User className="w-4 h-4" />
@@ -165,7 +281,12 @@ export default function NovoClienteModal({ isOpen, onClose, onSave }: NovoClient
                   name="tipoCliente"
                   value="JURIDICO"
                   checked={formData.tipoCliente === 'JURIDICO'}
-                  onChange={(e) => setFormData({ ...formData, tipoCliente: e.target.value as 'JURIDICO', cpfCnpj: '' })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, tipoCliente: e.target.value as 'JURIDICO', cpfCnpj: '' })
+                    setCpfCnpjValidation({ status: 'vazio', mensagem: '', formatado: '' })
+                    setCepValidation({ status: 'vazio', mensagem: '' })
+                    setEmpresaInfo(null)
+                  }}
                   className="text-blue-600 focus:ring-blue-500"
                 />
                 <Building className="w-4 h-4" />
@@ -199,15 +320,52 @@ export default function NovoClienteModal({ isOpen, onClose, onSave }: NovoClient
               <input
                 type="text"
                 value={formData.cpfCnpj}
-                onChange={(e) => setFormData({ ...formData, cpfCnpj: formatCpfCnpj(e.target.value) })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.cpfCnpj ? 'border-red-300' : 'border-gray-300'
+                onChange={async (e) => {
+                  const formatted = await handleCpfCnpjChange(e.target.value)
+                  setFormData({ ...formData, cpfCnpj: formatted })
+                }}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+                  errors.cpfCnpj ? 'border-red-300 focus:ring-red-500' : 
+                  cpfCnpjValidation.status === 'valido' ? 'border-green-300 focus:ring-green-500' :
+                  cpfCnpjValidation.status === 'invalido' ? 'border-red-300 focus:ring-red-500' :
+                  'border-gray-300 focus:ring-blue-500'
                 }`}
                 placeholder={formData.tipoCliente === 'FISICO' ? '000.000.000-00' : '00.000.000/0000-00'}
               />
+              {cpfCnpjValidation.status !== 'vazio' && (
+                <div className={`mt-1 text-sm flex items-center gap-1 ${
+                  cpfCnpjValidation.status === 'valido' ? 'text-green-600' :
+                  cpfCnpjValidation.status === 'invalido' ? 'text-red-600' :
+                  'text-gray-600'
+                }`}>
+                  {cpfCnpjValidation.status === 'valido' && <CheckCircle className="w-4 h-4" />}
+                  {cpfCnpjValidation.status === 'invalido' && <XCircle className="w-4 h-4" />}
+                  {cpfCnpjValidation.status === 'incompleto' && <Clock className="w-4 h-4" />}
+                  {cpfCnpjValidation.mensagem}
+                </div>
+              )}
               {errors.cpfCnpj && <p className="text-red-500 text-sm mt-1">{errors.cpfCnpj}</p>}
             </div>
           </div>
+
+          {/* Informações da Empresa (se CNPJ válido) */}
+          {empresaInfo && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h4 className="font-medium text-green-800 mb-2 flex items-center gap-2">
+                <Building className="w-4 h-4" />
+                Dados da Empresa
+              </h4>
+              <div className="text-sm text-green-700 space-y-1">
+                <p><strong>Razão Social:</strong> {empresaInfo.razao_social}</p>
+                {empresaInfo.nome_fantasia && (
+                  <p><strong>Nome Fantasia:</strong> {empresaInfo.nome_fantasia}</p>
+                )}
+                <p><strong>Situação:</strong> {empresaInfo.descricao_situacao_cadastral}</p>
+                <p><strong>Porte:</strong> {empresaInfo.descricao_porte}</p>
+                <p><strong>CNAE:</strong> {empresaInfo.cnae_fiscal_descricao}</p>
+              </div>
+            </div>
+          )}
 
           {/* Contato */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -254,20 +412,54 @@ export default function NovoClienteModal({ isOpen, onClose, onSave }: NovoClient
               Endereço
             </h3>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Endereço Completo
-              </label>
-              <input
-                type="text"
-                value={formData.endereco}
-                onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Rua das Flores, 123, Centro"
-              />
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  CEP
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={formData.cep}
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      
+                      // Limitar a 9 caracteres (00000-000)
+                      if (newValue.length > 9) return;
+                      
+                      const formatted = brasilApi.formatadores.cep(newValue);
+                      setFormData(prev => ({ ...prev, cep: formatted }));
+                      
+                      // Sempre chamar validação do CEP
+                      handleCepChange(formatted);
+                    }}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+                      cepValidation.status === 'valido' ? 'border-green-300 focus:ring-green-500' :
+                      cepValidation.status === 'invalido' ? 'border-red-300 focus:ring-red-500' :
+                      'border-gray-300 focus:ring-blue-500'
+                    }`}
+                    placeholder="14400-000"
+                  />
+                  {cepLoading && (
+                    <Loader className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-500 w-4 h-4 animate-spin" />
+                  )}
+                </div>
+                {cepValidation.status !== 'vazio' && (
+                  <div className={`mt-1 text-sm flex items-center gap-1 ${
+                    cepValidation.status === 'valido' ? 'text-green-600' :
+                    cepValidation.status === 'invalido' ? 'text-red-600' :
+                    cepValidation.status === 'carregando' ? 'text-blue-600' :
+                    'text-gray-600'
+                  }`}>
+                    {cepValidation.status === 'valido' && <CheckCircle className="w-4 h-4" />}
+                    {cepValidation.status === 'invalido' && <XCircle className="w-4 h-4" />}
+                    {cepValidation.status === 'carregando' && <Loader className="w-4 h-4 animate-spin" />}
+                    {cepValidation.status === 'incompleto' && <Clock className="w-4 h-4" />}
+                    {cepValidation.mensagem}
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Cidade
@@ -280,17 +472,32 @@ export default function NovoClienteModal({ isOpen, onClose, onSave }: NovoClient
                   placeholder="Franca"
                 />
               </div>
+            </div>
 
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  CEP
+                  Logradouro
                 </label>
                 <input
                   type="text"
-                  value={formData.cep}
-                  onChange={(e) => setFormData({ ...formData, cep: formatCep(e.target.value) })}
+                  value={formData.endereco}
+                  onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="14400-000"
+                  placeholder="Rua das Flores"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Número
+                </label>
+                <input
+                  type="text"
+                  value={formData.numero}
+                  onChange={(e) => setFormData({ ...formData, numero: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="123"
                 />
               </div>
             </div>
