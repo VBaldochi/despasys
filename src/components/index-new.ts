@@ -1,22 +1,20 @@
 // UI Components
-export { default as Button } from './ui/Button'
-export { default as Input } from './ui/Input'
+export { Button, ButtonGroup, FAB, ToggleButton, IconButton } from './ui/Button'
+export { Input, Textarea, Select } from './ui/Input'
 export { default as LoadingSpinner } from './ui/LoadingSpinner'
 export { default as Modal } from './ui/Modal'
 export { default as Skeleton } from './ui/Skeleton'
-export { default as Toast } from './ui/Toast'
+export { ToastProvider, useToast } from './ui/Toast'
 
 // Layout Components
 export { default as Header } from './layout/Header'
-export { default as ImprovedHeader } from './layout/ImprovedHeader'
 export { default as Footer } from './layout/Footer'
-export { default as MobileNav } from './layout/MobileNav'
 export { default as Layout } from './layout/Layout'
 export { default as Breadcrumb } from './layout/Breadcrumb'
 
 // Common Components
-export { default as AuthProvider } from './common/AuthProvider'
-export { default as ProtectedRoute } from './common/ProtectedRoute'
+export { AuthProvider } from './common/AuthProvider'
+export { ProtectedRoute } from './common/ProtectedRoute'
 export { default as NotificationCenter } from './common/NotificationCenter'
 export { default as ScrollToTop } from './common/ScrollToTop'
 export { default as FloatingActionButton } from './common/FloatingActionButton'

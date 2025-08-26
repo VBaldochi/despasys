@@ -6,8 +6,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { 
-  SearchIcon,
-  FilterIcon,
+  MagnifyingGlassIcon as SearchIcon,
+  FunnelIcon as FilterIcon,
   EyeIcon,
   ClockIcon,
   DocumentTextIcon,
@@ -18,7 +18,7 @@ import {
   PlayIcon,
   PauseIcon,
   StopIcon
-} from '@heroicons/react/outline'
+} from '@heroicons/react/24/outline'
 import { 
   useProcessStore, 
   formatDate, 

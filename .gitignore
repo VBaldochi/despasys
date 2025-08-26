@@ -7,6 +7,10 @@
 node_modules/
 dist/
 
+# Next.js build output
+.next/
+out/
+
 # Compiled Java class files
 *.class
 

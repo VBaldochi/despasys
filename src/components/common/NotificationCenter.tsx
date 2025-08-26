@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { Bell, CheckCircle, AlertCircle, Info, X } from 'lucide-react'
-import { useToast } from './Toast'
+import { useToast } from '../ui/Toast'
 
 export default function NotificationCenter() {
   const { showToast } = useToast()

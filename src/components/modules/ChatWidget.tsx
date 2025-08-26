@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  ChatIcon,
+import {
+  ChatBubbleLeftIcon,
+  XMarkIcon,
   PaperAirplaneIcon,
-  XIcon,
   UserIcon,
   PhoneIcon
-} from '@heroicons/react/outline'
+} from '@heroicons/react/24/outline'
 
 interface Message {
   id: string
@@ -126,9 +126,9 @@ export default function ChatWidget({
         whileTap={{ scale: 0.9 }}
       >
         {isOpen ? (
-          <XIcon className="h-6 w-6" />
+          <XMarkIcon className="h-6 w-6" />
         ) : (
-          <ChatIcon className="h-6 w-6" />
+          <ChatBubbleLeftIcon className="h-6 w-6" />
         )}
       </motion.button>
 
@@ -158,7 +158,7 @@ export default function ChatWidget({
                   onClick={() => setIsOpen(false)}
                   className="p-1 hover:bg-blue-700 rounded"
                 >
-                  <XIcon className="h-4 w-4" />
+                  <XMarkIcon className="h-4 w-4" />
                 </button>
               </div>
               {customerName && (

@@ -8,6 +8,8 @@ export interface MarcaFipe {
 
 export interface VeiculoFipe {
   modelo: string;
+  valor: string;
+  nome: string;
 }
 
 export interface PrecoFipe {

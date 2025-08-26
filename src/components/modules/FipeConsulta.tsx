@@ -82,14 +82,14 @@ export default function FipeConsulta({ onResultado }: FipeConsultaProps) {
   const consultarPreco = async () => {
     if (!veiculoSelecionado) return;
     
-    const veiculo = veiculos.find(v => v.codigo === veiculoSelecionado);
+    const veiculo = veiculos.find(v => v.modelo === veiculoSelecionado);
     if (!veiculo) return;
     
     setLoading(prev => ({ ...prev, preco: true }));
     setError(null);
     
     try {
-      const precoData = await fipeService.getPreco(veiculo.codigoFipe);
+      const precoData = await fipeService.getPreco(veiculoSelecionado);
       setResultado(precoData);
       onResultado?.(precoData);
     } catch (err) {
@@ -152,7 +152,7 @@ export default function FipeConsulta({ onResultado }: FipeConsultaProps) {
               {loading.marcas ? 'Carregando...' : 'Selecione a marca'}
             </option>
             {marcas.map((marca) => (
-              <option key={marca.codigo} value={marca.codigo}>
+              <option key={marca.valor} value={marca.valor}>
                 {marca.nome}
               </option>
             ))}
@@ -174,7 +174,7 @@ export default function FipeConsulta({ onResultado }: FipeConsultaProps) {
               {loading.veiculos ? 'Carregando...' : 'Selecione o modelo'}
             </option>
             {veiculos.map((veiculo) => (
-              <option key={veiculo.codigo} value={veiculo.codigo}>
+              <option key={veiculo.valor} value={veiculo.valor}>
                 {veiculo.nome}
               </option>
             ))}

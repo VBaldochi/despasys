@@ -1,11 +1,11 @@
 'use client'
 
 import { ReactNode } from 'react'
-import ImprovedHeader from './ImprovedHeader'
+import Header from './Header'
 import Breadcrumb from './Breadcrumb'
-import ScrollToTop from './ScrollToTop'
-import FloatingActionButton from './FloatingActionButton'
-import { ToastProvider } from './Toast'
+import ScrollToTop from '../common/ScrollToTop'
+import FloatingActionButton from '../common/FloatingActionButton'
+import { ToastProvider } from '../ui/Toast'
 import Footer from './Footer'
 
 interface LayoutProps {
@@ -24,7 +24,7 @@ export default function Layout({
   return (
     <ToastProvider>
       <div className="min-h-screen bg-gray-50">
-        <ImprovedHeader />
+        <Header />
         {showBreadcrumb && <Breadcrumb />}
         
         <main className="pt-20">
@@ -45,7 +45,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <ToastProvider>
       <div className="min-h-screen bg-gray-100">
-        <ImprovedHeader />
+        <Header />
         <Breadcrumb />
         
         <main className="pt-20">
