@@ -92,9 +92,21 @@ export const authOptions: NextAuthOptions = {
     maxAge: 24 * 60 * 60, // 24 horas
     updateAge: 60 * 60, // Atualizar a cada 1 hora
   },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      }
+    }
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        console.log('JWT Callback - User:', user)
         token.role = user.role
         token.tenantId = user.tenantId
         token.tenant = user.tenant
@@ -103,11 +115,13 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (token) {
+        console.log('Session Callback - Token:', token)
         session.user.id = token.sub || ''
         session.user.role = token.role as string
         session.user.tenantId = token.tenantId as string
         session.user.tenant = token.tenant as any
       }
+      console.log('Session Callback - Final Session:', session)
       return session
     }
   },
