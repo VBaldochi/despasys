@@ -1,0 +1,3 @@
+{
+  "/(admin)/fluxo-caixa/page": "app/(admin)/fluxo-caixa/page.js"
+}

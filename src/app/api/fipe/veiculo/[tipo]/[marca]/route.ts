@@ -6,11 +6,16 @@ export async function GET(
 ) {
   try {
     const { tipo, marca } = await params;
-    const { searchParams } = new URL(request.url);
     
-    // Validar tipo de veículo
-    const tiposValidos = ['carros', 'motos', 'caminhoes'];
-    if (!tiposValidos.includes(tipo)) {
+    // Map Portuguese types to English for the new API v2
+    const typeMap: { [key: string]: string } = {
+      'carros': 'cars',
+      'motos': 'motorcycles', 
+      'caminhoes': 'trucks'
+    };
+    
+    const vehicleType = typeMap[tipo];
+    if (!vehicleType) {
       return NextResponse.json(
         { 
           error: 'Tipo de veículo inválido. Use: carros, motos ou caminhoes',
@@ -30,61 +35,75 @@ export async function GET(
       );
     }
 
-    // Parâmetros opcionais
-    const tabelaReferencia = searchParams.get('tabela_referencia');
-    
-    let url = `https://brasilapi.com.br/api/fipe/veiculos/v1/${tipo}/${marca}`;
-    if (tabelaReferencia) {
-      url += `?tabela_referencia=${tabelaReferencia}`;
-    }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-      signal: AbortSignal.timeout(15000)
-    });
-
-    if (response.status === 404) {
-      return NextResponse.json(
-        { 
-          error: 'Veículos não encontrados para esta marca',
-          code: 'VEHICLES_NOT_FOUND' 
-        },
-        { status: 404 }
+    try {
+      // Usar a nova API v2 da FIPE
+      const response = await fetch(
+        `https://fipe.parallelum.com.br/api/v2/${vehicleType}/brands/${marca}/models`,
+        {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'DespaSys/1.0 (Sistema de Gestão)',
+            'Accept': 'application/json',
+          },
+        }
       );
-    }
 
-    if (response.status === 504) {
-      return NextResponse.json(
-        { 
-          error: 'Serviço FIPE temporariamente indisponível. Tente novamente em alguns minutos.',
-          code: 'SERVICE_UNAVAILABLE' 
-        },
-        { status: 503 }
-      );
-    }
+      clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      return NextResponse.json(
-        { 
-          error: 'Erro ao buscar veículos FIPE',
-          code: 'API_ERROR' 
-        },
-        { status: response.status }
-      );
-    }
+      if (response.status === 404) {
+        return NextResponse.json(
+          { 
+            error: 'Veículos não encontrados para esta marca',
+            code: 'VEHICLES_NOT_FOUND' 
+          },
+          { status: 404 }
+        );
+      }
 
-    const veiculos = await response.json();
-    
-    return NextResponse.json({ 
-      veiculos,
-      tipo,
-      marca,
-      total: Array.isArray(veiculos) ? veiculos.length : 1,
-      timestamp: new Date().toISOString()
-    });
+      if (response.status === 504) {
+        return NextResponse.json(
+          { 
+            error: 'Serviço FIPE temporariamente indisponível. Tente novamente em alguns minutos.',
+            code: 'SERVICE_UNAVAILABLE' 
+          },
+          { status: 503 }
+        );
+      }
+
+      if (!response.ok) {
+        return NextResponse.json(
+          { 
+            error: 'Erro ao buscar veículos FIPE',
+            code: 'API_ERROR' 
+          },
+          { status: response.status }
+        );
+      }
+
+      const data = await response.json();
+      
+      // Convert v2 format (code/name) to v1 format (valor/nome) for compatibility
+      const veiculos = data.map((item: any) => ({
+        valor: item.code,
+        nome: item.name
+      }));
+      
+      return NextResponse.json({ 
+        veiculos,
+        tipo: vehicleType,
+        marca,
+        total: veiculos.length,
+        timestamp: new Date().toISOString(),
+        source: 'FIPE API v2'
+      });
+
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      throw fetchError;
+    }
 
   } catch (error) {
     console.error('Erro na API FIPE veículos:', error);

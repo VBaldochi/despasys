@@ -72,14 +72,14 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$serv
 async function GET(request, { params }) {
     try {
         const { tipo } = await params;
-        const { searchParams } = new URL(request.url);
-        // Validar tipo de veículo
-        const tiposValidos = [
-            'carros',
-            'motos',
-            'caminhoes'
-        ];
-        if (!tiposValidos.includes(tipo)) {
+        // Map Portuguese types to English for the new API v2
+        const typeMap = {
+            'carros': 'cars',
+            'motos': 'motorcycles',
+            'caminhoes': 'trucks'
+        };
+        const vehicleType = typeMap[tipo];
+        if (!vehicleType) {
             return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
                 error: 'Tipo de veículo inválido. Use: carros, motos ou caminhoes',
                 code: 'INVALID_VEHICLE_TYPE'
@@ -87,50 +87,59 @@ async function GET(request, { params }) {
                 status: 400
             });
         }
-        // Parâmetros opcionais
-        const tabelaReferencia = searchParams.get('tabela_referencia');
-        let url = `https://brasilapi.com.br/api/fipe/marcas/v1/${tipo}`;
-        if (tabelaReferencia) {
-            url += `?tabela_referencia=${tabelaReferencia}`;
-        }
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            },
-            signal: AbortSignal.timeout(15000) // 15 segundos para FIPE
-        });
-        if (response.status === 404) {
-            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-                error: 'Marcas não encontradas para este tipo de veículo',
-                code: 'BRANDS_NOT_FOUND'
-            }, {
-                status: 404
+        const controller = new AbortController();
+        const timeoutId = setTimeout(()=>controller.abort(), 15000);
+        try {
+            // Usar a nova API v2 da FIPE
+            const response = await fetch(`https://fipe.parallelum.com.br/api/v2/${vehicleType}/brands`, {
+                signal: controller.signal,
+                headers: {
+                    'User-Agent': 'DespaSys/1.0 (Sistema de Gestão)',
+                    'Accept': 'application/json'
+                }
             });
-        }
-        if (response.status === 504) {
+            clearTimeout(timeoutId);
+            if (response.status === 404) {
+                return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                    error: 'Marcas não encontradas para este tipo de veículo',
+                    code: 'BRANDS_NOT_FOUND'
+                }, {
+                    status: 404
+                });
+            }
+            if (response.status === 504) {
+                return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                    error: 'Serviço FIPE temporariamente indisponível. Tente novamente em alguns minutos.',
+                    code: 'SERVICE_UNAVAILABLE'
+                }, {
+                    status: 503
+                });
+            }
+            if (!response.ok) {
+                return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                    error: 'Erro ao buscar marcas FIPE',
+                    code: 'API_ERROR'
+                }, {
+                    status: response.status
+                });
+            }
+            const data = await response.json();
+            // Convert v2 format (code/name) to v1 format (valor/nome) for compatibility
+            const marcas = data.map((item)=>({
+                    valor: item.code,
+                    nome: item.name
+                }));
             return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-                error: 'Serviço FIPE temporariamente indisponível. Tente novamente em alguns minutos.',
-                code: 'SERVICE_UNAVAILABLE'
-            }, {
-                status: 503
+                marcas,
+                tipo: vehicleType,
+                total: marcas.length,
+                timestamp: new Date().toISOString(),
+                source: 'FIPE API v2'
             });
+        } catch (fetchError) {
+            clearTimeout(timeoutId);
+            throw fetchError;
         }
-        if (!response.ok) {
-            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-                error: 'Erro ao buscar marcas FIPE',
-                code: 'API_ERROR'
-            }, {
-                status: response.status
-            });
-        }
-        const marcas = await response.json();
-        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            marcas,
-            tipo,
-            total: marcas.length,
-            timestamp: new Date().toISOString()
-        });
     } catch (error) {
         console.error('Erro na API FIPE marcas:', error);
         if (error instanceof Error && error.name === 'AbortError') {

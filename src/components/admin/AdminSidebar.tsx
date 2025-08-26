@@ -7,12 +7,23 @@ import {
   LayoutDashboard,
   Users,
   FileText,
+  Search,
   Calendar,
   BarChart3,
   Settings,
   X,
   LogOut,
-  Search
+  DollarSign,
+  ClipboardCheck,
+  CreditCard,
+  UserCheck,
+  FileCheck,
+  Key,
+  ArrowRightLeft,
+  Wallet,
+  TrendingUp,
+  Receipt,
+  PiggyBank
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 
@@ -27,176 +38,217 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
   const navigation = [
     {
       name: 'Dashboard',
-      href: '/admin/dashboard',
+      href: '/dashboard',
       icon: LayoutDashboard,
-      current: pathname === '/admin/dashboard'
+      current: pathname === '/dashboard'
     },
     {
       name: 'Clientes',
-      href: '/admin/clientes',
+      href: '/clientes',
       icon: Users,
-      current: pathname === '/admin/clientes'
+      current: pathname === '/clientes'
     },
     {
       name: 'Processos',
-      href: '/admin/processos',
+      href: '/processos',
       icon: FileText,
-      current: pathname === '/admin/processos'
+      current: pathname === '/processos'
     },
     {
       name: 'Consultas',
-      href: '/admin/consultas',
+      href: '/consultas',
       icon: Search,
-      current: pathname === '/admin/consultas'
+      current: pathname === '/consultas'
     },
     {
       name: 'Agendamentos',
-      href: '/admin/appointments',
+      href: '/appointments',
       icon: Calendar,
-      current: pathname === '/admin/appointments'
+      current: pathname === '/appointments'
+    },
+    // Seção de Serviços
+    {
+      name: 'Cotações',
+      href: '/quotes',
+      icon: DollarSign,
+      current: pathname === '/quotes'
     },
     {
+      name: 'Avaliações',
+      href: '/evaluations',
+      icon: ClipboardCheck,
+      current: pathname === '/evaluations'
+    },
+    {
+      name: 'Registros',
+      href: '/registrations',
+      icon: FileCheck,
+      current: pathname === '/registrations'
+    },
+    {
+      name: 'Licenciamento',
+      href: '/licensing',
+      icon: Key,
+      current: pathname === '/licensing'
+    },
+    {
+      name: 'Transferências',
+      href: '/transfers',
+      icon: ArrowRightLeft,
+      current: pathname === '/transfers'
+    },
+    {
+      name: 'Desbloqueios',
+      href: '/unlocks',
+      icon: UserCheck,
+      current: pathname === '/unlocks'
+    },
+    // Seção Financeira
+    {
+      name: 'Financeiro',
+      href: '/financeiro',
+      icon: Wallet,
+      current: pathname === '/financeiro'
+    },
+    {
+      name: 'Receitas',
+      href: '/receitas',
+      icon: Receipt,
+      current: pathname === '/receitas'
+    },
+    {
+      name: 'Despesas',
+      href: '/despesas',
+      icon: CreditCard,
+      current: pathname === '/despesas'
+    },
+    {
+      name: 'Fluxo de Caixa',
+      href: '/fluxo-caixa',
+      icon: TrendingUp,
+      current: pathname === '/fluxo-caixa'
+    },
+    // Seção de Análise
+    {
       name: 'Relatórios',
-      href: '/admin/reports',
+      href: '/reports',
       icon: BarChart3,
-      current: pathname === '/admin/reports'
+      current: pathname === '/reports'
     },
     {
       name: 'Configurações',
-      href: '/admin/configuracoes',
+      href: '/configuracoes',
       icon: Settings,
-      current: pathname === '/admin/configuracoes'
+      current: pathname === '/configuracoes'
     }
   ]
 
-  const handleLogout = async () => {
+  const handleSignOut = async () => {
     await signOut({ callbackUrl: '/auth/login' })
   }
 
   return (
     <>
-      {/* Overlay for mobile */}
+      {/* Overlay para mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
 
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex min-h-0 flex-1 flex-col bg-white border-r border-gray-200">
-          <div className="flex flex-1 flex-col pt-5 pb-4 overflow-y-auto">
-            <div className="flex items-center flex-shrink-0 px-4">
-              <h1 className="text-xl font-bold text-gray-900">Lazuli SaaS</h1>
-            </div>
-
-            <nav className="mt-5 flex-1 px-2 space-y-1">
-              {navigation.map((item) => {
-                const isActive = pathname === item.href
-                const Icon = item.icon
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md $${
-                      isActive
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    <Icon
-                      className={`mr-3 h-6 w-6 ${
-                        isActive ? 'text-blue-700' : 'text-gray-400 group-hover:text-gray-500'
-                      }`}
-                    />
-                    {item.name}
-                  </Link>
-                )
-              })}
-            </nav>
-          </div>
-
-          <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
-            <button
-              onClick={handleLogout}
-              className="flex-shrink-0 w-full group block"
-            >
-              <div className="flex items-center">
-                <LogOut className="inline-block h-5 w-5 text-gray-400 group-hover:text-gray-500" />
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-                    Sair
-                  </p>
-                </div>
-              </div>
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Mobile Sidebar */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
+      {/* Sidebar */}
+      <div
+        className={`fixed top-0 left-0 z-40 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:hidden`}
+        }`}
       >
-        <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-gray-900">Lazuli SaaS</h1>
+        <div className="flex flex-col h-full">
+          {/* Header do Sidebar - apenas para mobile */}
+          <div className="flex items-center justify-between p-4 border-b lg:hidden">
+            <h2 className="text-lg font-semibold text-gray-800">DespaSys Admin</h2>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+              className="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
             >
-              <X className="h-6 w-6" />
+              <X className="h-5 w-5" />
             </button>
           </div>
 
-          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href
-              const Icon = item.icon
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setIsOpen(false)}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <Icon
-                    className={`mr-3 h-6 w-6 ${
-                      isActive ? 'text-blue-700' : 'text-gray-400 group-hover:text-gray-500'
-                    }`}
-                  />
-                  {item.name}
-                </Link>
-              )
-            })}
+          {/* Navegação */}
+          <nav className="flex-1 overflow-y-auto p-4">
+            <ul className="space-y-2">
+              {navigation.map((item) => {
+                const Icon = item.icon
+                return (
+                  <li key={item.name}>
+                    <Link
+                      href={item.href}
+                      className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        item.current
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      }`}
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Icon className="mr-3 h-5 w-5" />
+                      {item.name}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
           </nav>
 
-          <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
+          {/* Footer com botão de logout */}
+          <div className="p-4 border-t">
             <button
-              onClick={handleLogout}
-              className="flex-shrink-0 w-full group block"
+              onClick={handleSignOut}
+              className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:text-gray-900 hover:bg-gray-100 transition-colors"
             >
-              <div className="flex items-center">
-                <LogOut className="inline-block h-5 w-5 text-gray-400 group-hover:text-gray-500" />
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-                    Sair
-                  </p>
-                </div>
-              </div>
+              <LogOut className="mr-3 h-5 w-5" />
+              Sair
             </button>
           </div>
         </div>
-      </aside>
+      </div>
+
+      {/* Conteúdo da navegação para desktop - será renderizado dentro do layout */}
+      <div className="hidden lg:block lg:flex-1">
+        <nav className="flex-1 overflow-y-auto p-4">
+          <ul className="space-y-2">
+            {navigation.map((item) => {
+              const Icon = item.icon
+              return (
+                <li key={item.name}>
+                  <Link
+                    href={item.href}
+                    className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      item.current
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Icon className="mr-3 h-5 w-5" />
+                    {item.name}
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        </nav>
+
+        {/* Footer com botão de logout */}
+        <div className="p-4 border-t">
+          <button
+            onClick={handleSignOut}
+            className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:text-gray-900 hover:bg-gray-100 transition-colors"
+          >
+            <LogOut className="mr-3 h-5 w-5" />
+            Sair
+          </button>
+        </div>
+      </div>
     </>
   )
 }

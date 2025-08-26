@@ -1,10 +1,13 @@
 {
-  "/(app)/fipe/page": "app/(app)/fipe/page.js",
-  "/_not-found/page": "app/_not-found/page.js",
+  "/(admin)/consultas/page": "app/(admin)/consultas/page.js",
+  "/(admin)/dashboard/page": "app/(admin)/dashboard/page.js",
+  "/(auth)/login/page": "app/(auth)/login/page.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
   "/api/fipe/marcas/[tipo]/route": "app/api/fipe/marcas/[tipo]/route.js",
-  "/api/fipe/precos-reais/route": "app/api/fipe/precos-reais/route.js",
+  "/api/fipe/preco/[codigo]/route": "app/api/fipe/preco/[codigo]/route.js",
+  "/api/fipe/veiculo/[tipo]/[marca]/[modelo]/route": "app/api/fipe/veiculo/[tipo]/[marca]/[modelo]/route.js",
   "/api/fipe/veiculo/[tipo]/[marca]/route": "app/api/fipe/veiculo/[tipo]/[marca]/route.js",
   "/api/tenant/[domain]/route": "app/api/tenant/[domain]/route.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js"
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js"
 }

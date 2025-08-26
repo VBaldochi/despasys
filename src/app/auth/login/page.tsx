@@ -3,8 +3,8 @@
 import { useState, Suspense } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Button } from '@/components/Button'
-import { Input } from '@/components/Input'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -30,14 +30,19 @@ function LoginForm() {
       })
 
       if (result?.error) {
+        console.log('Login - Erro:', result.error)
         setError('Email ou senha incorretos')
       } else if (result?.ok) {
+        console.log('Login - Sucesso! Redirecionando...')
         // Aguardar um pouco para garantir que a sessão foi criada
         await new Promise(resolve => setTimeout(resolve, 500))
         
-        // Redirecionar diretamente sem verificar sessão novamente
-        const callbackUrl = searchParams.get('callbackUrl') || '/admin/dashboard'
-        window.location.href = callbackUrl
+        // Redirecionar diretamente para dashboard
+        const callbackUrl = searchParams.get('callbackUrl') || '/dashboard?tenant=demo'
+        console.log('Login - Redirecionando para:', callbackUrl)
+        
+        // Usar router.push ao invés de window.location.href para melhor controle
+        router.push(callbackUrl)
       }
     } catch (error) {
       setError('Erro interno. Tente novamente.')

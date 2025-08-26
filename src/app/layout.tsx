@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import { ToastProvider } from '@/components/Toast'
+import type { Metadata } from 'next'
+import './globals.css'
+import { ToastProvider } from '@/components/ui/Toast'
 import { TenantProvider } from '@/contexts/TenantContext'
-import { AuthProvider } from '@/components/AuthProvider'
+import { AuthProvider } from '@/components/common/AuthProvider'
 
 export const metadata: Metadata = {
   title: "Lazuli ERP - Sistema de Gestão para Despachantes",

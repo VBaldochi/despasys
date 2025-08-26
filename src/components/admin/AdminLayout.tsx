@@ -25,7 +25,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   if (!session || session.user?.role !== 'ADMIN') {
-    router.push('/admin/login')
+    router.push('/auth/login')
     return null
   }
 

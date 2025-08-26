@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { Car, Search, Plus, TrendingUp, Info } from 'lucide-react';
-import ConsultaFipe from '@/components/ConsultaFipe';
-import ModalConsultaVeiculo from '@/components/ModalConsultaVeiculo';
+import ConsultaFipe from '@/components/modules/ConsultaFipe';
+import ModalConsultaVeiculo from '@/components/modules/ModalConsultaVeiculo';
 
 interface VeiculoSalvo {
   id: string;
