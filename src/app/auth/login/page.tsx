@@ -22,27 +22,22 @@ function LoginForm() {
     setError('')
 
     try {
+      console.log('Login - Tentando autenticar com:', { email, tenantDomain })
+      
       const result = await signIn('credentials', {
         email,
         password,
         tenantDomain,
-        redirect: false
+        callbackUrl: '/dashboard',
+        redirect: true  // Mudando para true para usar o redirect automático
       })
 
+      console.log('Login - Resultado do signIn:', result)
+      
+      // Se chegou aqui com redirect: true, algo deu errado
       if (result?.error) {
         console.log('Login - Erro:', result.error)
         setError('Email ou senha incorretos')
-      } else if (result?.ok) {
-        console.log('Login - Sucesso! Redirecionando...')
-        // Aguardar um pouco para garantir que a sessão foi criada
-        await new Promise(resolve => setTimeout(resolve, 500))
-        
-        // Redirecionar diretamente para dashboard
-        const callbackUrl = searchParams.get('callbackUrl') || '/dashboard?tenant=demo'
-        console.log('Login - Redirecionando para:', callbackUrl)
-        
-        // Usar router.push ao invés de window.location.href para melhor controle
-        router.push(callbackUrl)
       }
     } catch (error) {
       setError('Erro interno. Tente novamente.')

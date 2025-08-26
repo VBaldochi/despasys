@@ -106,23 +106,40 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        console.log('JWT Callback - User:', user)
+        console.log('JWT Callback - User dados recebidos:', user)
         token.role = user.role
         token.tenantId = user.tenantId
         token.tenant = user.tenant
       }
+      console.log('JWT Callback - Token final:', token)
       return token
     },
     async session({ session, token }) {
+      console.log('Session Callback - Token recebido:', token)
       if (token) {
-        console.log('Session Callback - Token:', token)
         session.user.id = token.sub || ''
         session.user.role = token.role as string
         session.user.tenantId = token.tenantId as string
         session.user.tenant = token.tenant as any
       }
-      console.log('Session Callback - Final Session:', session)
+      console.log('Session Callback - Sessão final:', session)
       return session
+    },
+    async redirect({ url, baseUrl }) {
+      console.log('Redirect Callback - URL:', url, 'BaseURL:', baseUrl)
+      // Se for login, redirecionar para dashboard
+      if (url.includes('/auth/login') || url === baseUrl) {
+        return `${baseUrl}/dashboard`
+      }
+      // Se a URL for relativa, adicionar baseUrl
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`
+      }
+      // Se a URL for do mesmo domínio, permitir
+      if (new URL(url).origin === baseUrl) {
+        return url
+      }
+      return baseUrl
     }
   },
   pages: {
