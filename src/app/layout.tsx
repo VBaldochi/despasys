@@ -50,6 +50,12 @@ export default function RootLayout({
           <TenantProvider>
             <ToastProvider>
               {children}
+              {/* Componente de debug de sessão - só em desenvolvimento */}
+              {process.env.NODE_ENV === 'development' && (
+                <div id="session-debug">
+                  {/* O componente será carregado dinamicamente para evitar SSR issues */}
+                </div>
+              )}
             </ToastProvider>
           </TenantProvider>
         </AuthProvider>

@@ -1,8 +1,8 @@
-import { FlatCompat } from "@eslint/eslintrc"
+const { FlatCompat } = require("@eslint/eslintrc")
 
 const compat = new FlatCompat()
 
-export default [
+module.exports = [
   ...compat.extends("next/core-web-vitals"),
   {
     rules: {
