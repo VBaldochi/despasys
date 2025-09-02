@@ -48,19 +48,32 @@ function LoginForm() {
       } else if (result?.ok) {
         console.log('Login - Sucesso, verificando sessão...')
         
-        // Aguardar um pouco para NextAuth processar
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Aguardar mais tempo para NextAuth processar completamente
+        await new Promise(resolve => setTimeout(resolve, 2000))
         
-        // Verificar se a sessão foi criada
-        const session = await getSession()
-        console.log('Login - Sessão criada:', session)
+        // Tentar obter sessão várias vezes
+        let session = null
+        for (let i = 0; i < 5; i++) {
+          session = await getSession()
+          console.log(`Login - Tentativa ${i + 1} de obter sessão:`, session)
+          
+          if (session) break
+          
+          // Aguardar antes da próxima tentativa
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
         
         if (session) {
-          console.log('Login - Redirecionando para dashboard...')
+          console.log('Login - Sessão confirmada, redirecionando...')
           // Usar window.location ao invés de router para força reload completo
           window.location.href = '/dashboard'
         } else {
-          setError('Erro ao criar sessão')
+          console.log('Login - Sessão não foi criada após várias tentativas')
+          // Tentar redirecionar mesmo assim - o AuthGuard pode conseguir pegar a sessão
+          setError('Redirecionando...')
+          setTimeout(() => {
+            window.location.href = '/dashboard'
+          }, 1000)
         }
       } else {
         setError('Erro no processo de login')

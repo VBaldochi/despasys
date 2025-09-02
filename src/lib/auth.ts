@@ -110,6 +110,9 @@ export const authOptions: NextAuthOptions = {
     maxAge: 24 * 60 * 60, // 24 horas
     updateAge: 60 * 60, // Atualizar a cada 1 hora
   },
+  jwt: {
+    maxAge: 24 * 60 * 60, // 24 horas
+  },
   cookies: {
     sessionToken: {
       name: process.env.NODE_ENV === 'production' 
@@ -146,28 +149,37 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }: { token: any; user: any }) {
+      console.log('🔑 JWT Callback - Início:', { hasToken: !!token, hasUser: !!user })
+      
       if (user) {
-        console.log('JWT Callback - User dados recebidos:', user)
+        console.log('🔑 JWT Callback - User dados recebidos:', user)
         token.role = user.role
         token.tenantId = user.tenantId
         token.tenant = user.tenant
-        // Adicionar timestamp para debug de sessão
         token.loginTime = Date.now()
+        console.log('🔑 JWT Callback - Token sendo criado:', token)
+      } else {
+        console.log('🔑 JWT Callback - Token existente sendo usado:', token)
       }
-      console.log('JWT Callback - Token final:', token)
+      
       return token
     },
     async session({ session, token }: { session: any; token: any }) {
-      console.log('Session Callback - Token recebido:', token)
-      if (token) {
+      console.log('📱 Session Callback - Início:', { hasSession: !!session, hasToken: !!token })
+      console.log('📱 Session Callback - Token recebido:', token)
+      
+      if (token && session?.user) {
         session.user.id = token.sub || ''
         session.user.role = token.role as string
         session.user.tenantId = token.tenantId as string
         session.user.tenant = token.tenant as any
-        // Adicionar informações de debug
         ;(session as any).loginTime = token.loginTime
+        
+        console.log('📱 Session Callback - Sessão final criada:', session)
+      } else {
+        console.log('📱 Session Callback - Erro: Token ou session.user não encontrado')
       }
-      console.log('Session Callback - Sessão final:', session)
+      
       return session
     },
     async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
