@@ -48,13 +48,17 @@ function LoginForm() {
       } else if (result?.ok) {
         console.log('Login - Sucesso, verificando sessão...')
         
+        // Aguardar um pouco para NextAuth processar
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
         // Verificar se a sessão foi criada
         const session = await getSession()
         console.log('Login - Sessão criada:', session)
         
         if (session) {
           console.log('Login - Redirecionando para dashboard...')
-          router.push('/dashboard')
+          // Usar window.location ao invés de router para força reload completo
+          window.location.href = '/dashboard'
         } else {
           setError('Erro ao criar sessão')
         }
