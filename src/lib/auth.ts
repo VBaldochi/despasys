@@ -14,27 +14,38 @@ export const authOptions: NextAuthOptions = {
         tenantDomain: { label: 'Tenant', type: 'text' }
       },
       async authorize(credentials: Record<string, string> | undefined) {
+        console.log('🔐 Authorize - Início:', { 
+          hasCredentials: !!credentials,
+          email: credentials?.email,
+          tenantDomain: credentials?.tenantDomain
+        })
+
         if (!credentials?.email || !credentials?.password || !credentials?.tenantDomain) {
+          console.log('🔐 Authorize - Credenciais incompletas')
           return null
         }
 
         try {
           // Buscar tenant primeiro
+          console.log('🔐 Authorize - Buscando tenant:', credentials.tenantDomain)
           const tenant = await (prisma as any).tenant.findUnique({
             where: { domain: credentials.tenantDomain }
           })
 
           if (!tenant) {
-            console.error('Tenant não encontrado:', credentials.tenantDomain)
+            console.error('🔐 Authorize - Tenant não encontrado:', credentials.tenantDomain)
             return null
           }
 
+          console.log('🔐 Authorize - Tenant encontrado:', { id: tenant.id, name: tenant.name, status: tenant.status })
+
           if (tenant.status !== 'ACTIVE' && tenant.status !== 'TRIAL') {
-            console.error('Tenant inativo:', tenant.status)
+            console.error('🔐 Authorize - Tenant inativo:', tenant.status)
             return null
           }
 
           // Buscar usuário do tenant
+          console.log('🔐 Authorize - Buscando usuário:', credentials.email)
           const user = await (prisma as any).user.findFirst({
             where: {
               email: credentials.email,
@@ -54,34 +65,41 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (!user) {
-            console.error('Usuário não encontrado:', credentials.email)
+            console.error('🔐 Authorize - Usuário não encontrado:', credentials.email)
             return null
           }
 
+          console.log('🔐 Authorize - Usuário encontrado:', { id: user.id, email: user.email, role: user.role })
+
           // Verificar senha
           if (!user.password) {
-            console.error('Usuário sem senha')
+            console.error('🔐 Authorize - Usuário sem senha')
             return null
           }
 
           const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
 
           if (!isPasswordValid) {
-            console.error('Senha inválida')
+            console.error('🔐 Authorize - Senha inválida')
             return null
           }
 
+          console.log('🔐 Authorize - Autenticação bem-sucedida, retornando dados do usuário')
+
           // Retornar dados do usuário para a sessão
-          return {
+          const userResult = {
             id: user.id,
             email: user.email,
             name: user.name,
             role: user.role,
             tenantId: (user as any).tenantId,
             tenant: (user as any).tenant
-          } as any
+          }
+
+          console.log('🔐 Authorize - Dados finais:', userResult)
+          return userResult as any
         } catch (error) {
-          console.error('Erro na autenticação:', error)
+          console.error('🔐 Authorize - Erro na autenticação:', error)
           return null
         }
       }
@@ -188,7 +206,7 @@ export const authOptions: NextAuthOptions = {
     signIn: '/auth/login',
     error: '/auth/login'
   },
-  debug: process.env.NODE_ENV === 'development', // Voltar debug normal
+  debug: true, // Debug temporário para investigar problema
   logger: {
     error(code: any, metadata: any) {
       console.error('NextAuth Error:', code, metadata)

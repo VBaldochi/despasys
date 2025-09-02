@@ -24,22 +24,45 @@ function LoginForm() {
     try {
       console.log('Login - Tentando autenticar com:', { email, tenantDomain })
       
+      // Primeiro, verificar se o tenant existe
+      const tenantCheck = await fetch(`/api/tenant/${tenantDomain}`)
+      if (!tenantCheck.ok) {
+        setError('Tenant não encontrado')
+        setIsLoading(false)
+        return
+      }
+      
       const result = await signIn('credentials', {
         email,
         password,
         tenantDomain,
         callbackUrl: '/dashboard',
-        redirect: true  // Mudando para true para usar o redirect automático
+        redirect: false  // Mudando para false para controlar o processo
       })
 
-      console.log('Login - Resultado do signIn:', result)
+      console.log('Login - Resultado completo do signIn:', result)
       
-      // Se chegou aqui com redirect: true, algo deu errado
       if (result?.error) {
         console.log('Login - Erro:', result.error)
         setError('Email ou senha incorretos')
+      } else if (result?.ok) {
+        console.log('Login - Sucesso, verificando sessão...')
+        
+        // Verificar se a sessão foi criada
+        const session = await getSession()
+        console.log('Login - Sessão criada:', session)
+        
+        if (session) {
+          console.log('Login - Redirecionando para dashboard...')
+          router.push('/dashboard')
+        } else {
+          setError('Erro ao criar sessão')
+        }
+      } else {
+        setError('Erro no processo de login')
       }
     } catch (error) {
+      console.error('Login - Erro interno:', error)
       setError('Erro interno. Tente novamente.')
     } finally {
       setIsLoading(false)
