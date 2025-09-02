@@ -101,9 +101,7 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        // Não definir domain para Vercel - deixar que ele gerencie
-        domain: undefined
+        secure: process.env.NODE_ENV === 'production'
       }
     },
     callbackUrl: {
@@ -113,8 +111,7 @@ export const authOptions: NextAuthOptions = {
       options: {
         sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        domain: undefined
+        secure: process.env.NODE_ENV === 'production'
       }
     },
     csrfToken: {
@@ -125,8 +122,7 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        domain: undefined
+        secure: process.env.NODE_ENV === 'production'
       }
     }
   },
@@ -192,7 +188,7 @@ export const authOptions: NextAuthOptions = {
     signIn: '/auth/login',
     error: '/auth/login'
   },
-  debug: true, // Ativar debug temporariamente em produção
+  debug: process.env.NODE_ENV === 'development', // Voltar debug normal
   logger: {
     error(code: any, metadata: any) {
       console.error('NextAuth Error:', code, metadata)
