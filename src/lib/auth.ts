@@ -183,21 +183,34 @@ export const authOptions: NextAuthOptions = {
       return session
     },
     async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
-      console.log('Redirect Callback - URL:', url, 'BaseURL:', baseUrl)
+      console.log('🔄 Redirect Callback - Início:', { url, baseUrl })
       
       // Forçar uso do baseUrl correto em produção
       const productionBaseUrl = process.env.NODE_ENV === 'production' 
         ? process.env.NEXTAUTH_URL || baseUrl
         : baseUrl
       
+      console.log('🔄 Redirect Callback - Base URL final:', productionBaseUrl)
+      
+      // Se for callback após login bem-sucedido, redirecionar para dashboard
+      if (url.includes('/api/auth/callback') || url.includes('/api/auth/signin')) {
+        const dashboardUrl = `${productionBaseUrl}/dashboard`
+        console.log('🔄 Redirect Callback - Redirecionando para dashboard:', dashboardUrl)
+        return dashboardUrl
+      }
+      
       // Se for login, redirecionar para dashboard
       if (url.includes('/auth/login') || url === productionBaseUrl || url === baseUrl) {
-        return `${productionBaseUrl}/dashboard`
+        const dashboardUrl = `${productionBaseUrl}/dashboard`
+        console.log('🔄 Redirect Callback - Login redirect para dashboard:', dashboardUrl)
+        return dashboardUrl
       }
       
       // Se a URL for relativa, adicionar baseUrl
       if (url.startsWith('/')) {
-        return `${productionBaseUrl}${url}`
+        const fullUrl = `${productionBaseUrl}${url}`
+        console.log('🔄 Redirect Callback - URL relativa convertida:', fullUrl)
+        return fullUrl
       }
       
       // Se a URL for do mesmo domínio, permitir
@@ -205,12 +218,14 @@ export const authOptions: NextAuthOptions = {
         const urlObj = new URL(url)
         const baseUrlObj = new URL(productionBaseUrl)
         if (urlObj.origin === baseUrlObj.origin) {
+          console.log('🔄 Redirect Callback - URL do mesmo domínio permitida:', url)
           return url
         }
       } catch (e) {
-        console.error('Erro ao processar URLs de redirect:', e)
+        console.error('🔄 Redirect Callback - Erro ao processar URLs:', e)
       }
       
+      console.log('🔄 Redirect Callback - Fallback para base URL:', productionBaseUrl)
       return productionBaseUrl
     }
   },

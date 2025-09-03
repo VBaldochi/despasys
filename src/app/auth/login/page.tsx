@@ -36,7 +36,7 @@ function LoginForm() {
         email,
         password,
         tenantDomain,
-        callbackUrl: '/dashboard',
+        callbackUrl: `${window.location.origin}/dashboard`,
         redirect: false  // Mudando para false para controlar o processo
       })
 
