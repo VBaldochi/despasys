@@ -7,6 +7,7 @@ import AuthGuard from '@/components/admin/AuthGuard'
 import ServerAuthGuard from '@/components/admin/ServerAuthGuard'
 import SimpleAuthGuard from '@/components/admin/SimpleAuthGuard'
 import DebugAuthGuard from '@/components/admin/DebugAuthGuard'
+import FinalAuthGuard from '@/components/admin/FinalAuthGuard'
 import { Bars3Icon, BellIcon } from '@heroicons/react/24/outline'
 
 export default function AdminLayout({
@@ -18,7 +19,7 @@ export default function AdminLayout({
 
   return (
     <SessionProvider>
-      <SimpleAuthGuard>
+      <FinalAuthGuard>
         <div className="min-h-screen bg-gray-50">
           <div className="flex h-screen">
             {/* Sidebar para desktop */}
@@ -79,7 +80,7 @@ export default function AdminLayout({
             </div>
           </div>
         </div>
-      </SimpleAuthGuard>
+      </FinalAuthGuard>
     </SessionProvider>
   )
 }
