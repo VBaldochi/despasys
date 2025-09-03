@@ -18,7 +18,7 @@ export default function AdminLayout({
 
   return (
     <SessionProvider>
-      <DebugAuthGuard>
+      <SimpleAuthGuard>
         <div className="min-h-screen bg-gray-50">
           <div className="flex h-screen">
             {/* Sidebar para desktop */}
@@ -79,7 +79,7 @@ export default function AdminLayout({
             </div>
           </div>
         </div>
-      </DebugAuthGuard>
+      </SimpleAuthGuard>
     </SessionProvider>
   )
 }
