@@ -31,6 +31,23 @@ function LoginForm() {
         setIsLoading(false)
         return
       }
+
+      // Debug: Testar autenticação antes do signIn
+      console.log('Login - Testando autenticação...')
+      const debugResponse = await fetch('/api/debug/test-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, tenantDomain })
+      })
+      
+      const debugResult = await debugResponse.json()
+      console.log('Login - Debug auth result:', debugResult)
+      
+      if (!debugResult.success) {
+        setError(`Erro na autenticação: ${debugResult.error} (step: ${debugResult.step})`)
+        setIsLoading(false)
+        return
+      }
       
       const result = await signIn('credentials', {
         email,
