@@ -52,3 +52,6 @@ Thumbs.db
 *.mov
 *.wmv
 
+# Mobile app folder (desenvolvimento local apenas)
+mobile/
+
