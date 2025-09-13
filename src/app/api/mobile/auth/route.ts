@@ -6,16 +6,9 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
-    // Verificar API Key
-    const authResult = await authenticateApiKey(request)
-    if (authResult.error) {
-      return NextResponse.json(
-        { error: authResult.error },
-        { status: authResult.status }
-      )
-    }
-
     const { email, password, tenantDomain } = await request.json()
+
+    console.log('🔍 Mobile Auth - Dados recebidos:', { email, tenantDomain, hasPassword: !!password })
 
     if (!email || !password || !tenantDomain) {
       return NextResponse.json(
@@ -54,6 +47,7 @@ export async function POST(request: NextRequest) {
         name: user.name,
         email: user.email,
         role: user.role,
+        tenantId: user.tenantId, // Add tenantId directly to user object
         tenant: {
           id: user.tenant.id,
           name: user.tenant.name,
@@ -79,12 +73,19 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function GET() {
+  return NextResponse.json({ 
+    message: 'Mobile Auth API - Use POST method for login',
+    methods: ['POST']
+  })
+}
+
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
     },
   })

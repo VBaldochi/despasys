@@ -6,6 +6,18 @@ const nextConfig: NextConfig = {
   
   // Compressão
   compress: true,
+
+  // Excluir pasta mobile do build
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
+  
+  // Ignorar arquivos do mobile durante o build
+  webpack: (config) => {
+    config.watchOptions = {
+      ...config.watchOptions,
+      ignored: ['**/mobile/**', '**/node_modules/**']
+    };
+    return config;
+  },
   
   // Experimental features para melhor performance
   experimental: {
