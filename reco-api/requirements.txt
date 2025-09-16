@@ -1,0 +1,37 @@
+# --- Framework principal ---
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+
+# --- Banco de dados ---
+sqlalchemy[asyncio]==2.0.32
+asyncpg==0.29.0   # driver para Postgres async
+
+# --- Machine Learning ---
+scikit-learn==1.5.2
+pandas==2.2.3
+numpy==1.26.4
+
+# --- Autenticação JWT ---
+python-jose==3.3.0
+
+# --- Utilitários ---
+python-multipart==0.0.9  # para upload de arquivos CSV
+
+#COMO RODAR
+# 1. Entre na pasta da API
+cd reco-api
+
+# 2. Crie um ambiente virtual (apenas 1 vez)
+python -m venv .venv
+
+# 3. Ative a venv
+# Windows:
+.venv\Scripts\activate
+# Linux/Mac:
+source .venv/bin/activate
+
+# 4. Instale dependências
+pip install -r requirements.txt
+
+# 5. Rode a API localmente (porta 8020 como já usamos)
+uvicorn app:app --reload --port 8020
