@@ -1,0 +1,17 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm install --include=dev && prisma generate && next build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install --include=dev",
+  "devCommand": "npm run dev",
+  "regions": ["iad1"],
+  "env": {
+    "NODE_ENV": "production",
+    "NEXT_TELEMETRY_DISABLED": "1"
+  },
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  }
+}
