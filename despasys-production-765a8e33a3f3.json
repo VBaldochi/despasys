@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "despasys-production",
+  "private_key_id": "765a8e33a3f31068f6c659e9d198d880c8bc24fb",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCiMT5oiKBRX8Zv\n9PkV8d+s3JMAjDnLiReDr+TWsFRI0EHkTGR/HAQnyZMt1n4PCzXEXM3E/mbsYAys\n8lA74zdpRcSa8YaqoSXbu0JqLPSwirNc0NGq4X8o4Z2PkqFSMPc98nFlnTWp2J01\n+Ijk98zzyt94DZ6whY1AlFovShONYVMoeq/DrfJ0BwhQErNb1kIVNBOE8ozEAGSK\nCQHLPdo+afBWGo6qrcpX6ipxorinBIiS1zvQ4lyPC1gKxPRfSPincMvNdwbGGFf0\n9Gnr5s6eFAxIBbXUN4BSyWPuxhQ3bnrI+3eAkExYPPq49ccNyRGgNLBmQAwOcz43\nKX3WA2NvAgMBAAECggEAMNF9pV0qVBPt2Jj1uEM7Pf6OSKXsZ3T2HO7+hBhC5j+4\n9YyA2zmFjqw/npZnDwQixN3iGZ8xP4iRiCTPPZdggFE9oh18mTMz//VXQjoR1GmL\nHy7DTRneemGeWS6bW+/dG0o0E4/ELUFD4JDUM4baq66uoKYI07z/DScaFg3H4M+k\n/7dWO2yZW0n4BsvlZxxrBKxlVPX99d+iWUfV6Oyflb9f157MsrLWqgkoFddligbK\nFdA+Onh+qGzSJLBJ1a3hoLMZAeF2GWwd6o4jITB1jpl9eSREMbLx4lU6RLP1xImz\n+8C7YEd0dsqV5JbaibO472lqTtrUuxP1uARvU9tEwQKBgQDlWVZsG5F2cnHEeTpi\nx9uU37vARyMMV5/I12hrLAHZgOmaduYZeehav8mWm+o8JVpZzZVU7HqDVs5tPLIq\nulf9V54ZNUVy/e24GNwjCW1qkFHTxlGOuHx1o4qh0x3CEd+P86ApPvOD35icB3/T\nrYIDepGtXh5zwoXQWo7a3qLBsQKBgQC1CiJlaj+Q9Cw7Sjf1YgsAQKoboICi+NQO\nR6LOGu6Ld9L1GLbUHdsKC2ygM+TuLGwfFeWuYKvw+6oUPIjnn5khiW9ekEVoWMMl\n6WImjYA7wcXnzXINcE4cjSap5HJuU/lGzRfvr9xqo3srY8QWnddBmiw+IQ9NNU+p\nJQSl0VGfHwKBgAc2aQZbU5bDAJrqKRDkMh6bbp8cXZjMxKSfSZRdPO2nJTGLXa8d\na1Y3Q9Ktso8TqaS7V1/lU/D/cNx0lTHMzGmWMM2gJD/6hlhMx9d+O2enhDtBuFzh\npmBYtUpjhkMNJtezFK1XYncaOAVoIvf4M+eCGkS2egSv8F9eCbIOYFXxAoGAaUtk\nqAF8yS0K0M0g8Mo+Rb5Wcc0PJDp+83M8wI0vctSVUNI3+/UFYbk1S5QDMXeKxyWw\nOZSmTHnC+RQgOD8+DCBoMuLMS51cmx87Y9rm21qfZWu7Sw+njrmV5DgnSf3zPPeq\nVVC+bRN6Xske0lypRtGJq/UEdk5sb59FLcAprdcCgYEAuX7Un8pACpQecAd9tk/x\nRejMQuwRQlkaxnw3mD7oelJoMqieJfBsD4c3ajNM6uQX39egfAtCYhRtCJer/jpZ\nd7V57pW4nZ7Gt+6KdNsM/Hr4QDdur+VXtEfcclkHfHp++t6AATo/99+QT/WfUhfn\nlGlzOasFNKEMiHwiToR+MMc=\n-----END PRIVATE KEY-----\n",
+  "client_email": "despasys-web@despasys-production.iam.gserviceaccount.com",
+  "client_id": "104428450453989109472",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/despasys-web%40despasys-production.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
