@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { validateMobileAuth } from '@/lib/mobile-auth';
 
 // Função para mapear status do banco para mobile
 function mapStatusToMobile(status: string): 'aguardando' | 'andamento' | 'finalizado' | 'cancelado' {
@@ -23,12 +22,14 @@ function mapStatusToMobile(status: string): 'aguardando' | 'andamento' | 'finali
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const authResult = await validateMobileAuth(request);
+    if (!authResult.success || !authResult.user) {
+      return NextResponse.json({ error: authResult.error || 'Não autorizado' }, { status: 401 });
     }
 
-    if (!session.user.tenantId) {
+    const { user } = authResult;
+
+    if (!user.tenantId) {
       return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 400 });
     }
 
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
     const veiculoId = searchParams.get('veiculoId');
 
     const where: any = {
-      tenantId: session.user.tenantId,
+      tenantId: user.tenantId,
     };
 
     if (statusParam) {
@@ -125,12 +126,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const authResult = await validateMobileAuth(request);
+    if (!authResult.success || !authResult.user) {
+      return NextResponse.json({ error: authResult.error || 'Não autorizado' }, { status: 401 });
     }
 
-    if (!session.user.tenantId) {
+    const { user } = authResult;
+
+    if (!user.tenantId) {
       return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 400 });
     }
 
@@ -141,7 +144,7 @@ export async function POST(request: NextRequest) {
     const customer = await prisma.customer.findFirst({
       where: {
         id: clienteId,
-        tenantId: session.user.tenantId,
+        tenantId: user.tenantId,
       },
     });
 
@@ -155,7 +158,7 @@ export async function POST(request: NextRequest) {
       veiculo = await prisma.veiculo.findFirst({
         where: {
           id: veiculoId,
-          tenantId: session.user.tenantId,
+          tenantId: user.tenantId,
         },
       });
     }
@@ -173,11 +176,11 @@ export async function POST(request: NextRequest) {
 
     const processo = await prisma.process.create({
       data: {
-        tenantId: session.user.tenantId,
+        tenantId: user.tenantId,
         numero: `PROC-${Date.now()}`,
         customerId: clienteId,
         veiculoId: veiculoId || null,
-        responsavelId: session.user.id,
+        responsavelId: user.id,
         tipoServico: tipoServicoEnum as any,
         titulo: titulo || `${tipoServico} - ${veiculo?.placa || 'N/A'}`,
         descricao: descricao || null,

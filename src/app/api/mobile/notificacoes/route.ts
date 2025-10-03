@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { validateMobileAuth } from '@/lib/mobile-auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const authResult = await validateMobileAuth(request);
+    if (!authResult.success || !authResult.user) {
+      return NextResponse.json({ error: authResult.error || 'Não autorizado' }, { status: 401 });
     }
 
     // Mock notifications for now

@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { validateMobileAuth } from '@/lib/mobile-auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const authResult = await validateMobileAuth(request);
+    if (!authResult.success || !authResult.user) {
+      return NextResponse.json({ error: authResult.error || 'Não autorizado' }, { status: 401 });
     }
 
-    if (!session.user.tenantId) {
+    const { user } = authResult;
+
+    if (!user.tenantId) {
       return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 400 });
     }
 
     const clientes = await prisma.customer.findMany({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: user.tenantId,
         status: 'ATIVO',
       },
       select: {
@@ -61,12 +62,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    const authResult = await validateMobileAuth(request);
+    if (!authResult.success || !authResult.user) {
+      return NextResponse.json({ error: authResult.error || 'Não autorizado' }, { status: 401 });
     }
 
-    if (!session.user.tenantId) {
+    const { user } = authResult;
+
+    if (!user.tenantId) {
       return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 400 });
     }
 
@@ -77,7 +80,7 @@ export async function POST(request: NextRequest) {
     const clienteExistente = await prisma.customer.findFirst({
       where: {
         cpfCnpj,
-        tenantId: session.user.tenantId,
+        tenantId: user.tenantId,
       },
     });
 
@@ -89,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     const cliente = await prisma.customer.create({
       data: {
-        tenantId: session.user.tenantId,
+        tenantId: user.tenantId,
         name: nome,
         phone: telefone,
         email: email || null,

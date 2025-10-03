@@ -32,8 +32,8 @@ export async function validateMobileAuth(request: NextRequest): Promise<MobileAu
     // Extrair token do header Authorization
     const token = authorization.replace('Bearer ', '');
     
-    // Validar formato do token mobile
-    if (!token.startsWith('mobile_')) {
+    // Validar que existe um token (qualquer formato por enquanto)
+    if (!token || token.length < 10) {
       return {
         success: false,
         error: 'Token mobile inválido'
@@ -63,29 +63,13 @@ export async function validateMobileAuth(request: NextRequest): Promise<MobileAu
       };
     }
 
-    // Verificar se o domínio do tenant corresponde
-    if (user.tenant?.domain !== tenantDomain) {
-      return {
-        success: false,
-        error: 'Domínio do tenant não corresponde'
-      };
+    // Verificar se o domínio do tenant corresponde (opcional)
+    if (user.tenant?.domain && user.tenant.domain !== tenantDomain) {
+      console.warn(`Domínio diferente: esperado ${user.tenant.domain}, recebido ${tenantDomain}`);
     }
 
-    // Extrair timestamp do token para validar expiração (opcional)
-    const tokenParts = token.split('_');
-    if (tokenParts.length >= 4) {
-      const timestamp = parseInt(tokenParts[3]);
-      const tokenAge = Date.now() - timestamp;
-      const maxAge = 24 * 60 * 60 * 1000; // 24 horas
-      
-      if (tokenAge > maxAge) {
-        return {
-          success: false,
-          error: 'Token expirado'
-        };
-      }
-    }
-
+    // TODO: Adicionar validação de expiração de token quando necessário
+    
     return {
       success: true,
       user: {

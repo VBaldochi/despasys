@@ -37,8 +37,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Gerar token simples (em produção, use JWT)
-    const token = Buffer.from(`${user.id}:${user.tenantId}:${Date.now()}`).toString('base64')
+    // Gerar token simples para mobile (formato compatível com validação)
+    const timestamp = Date.now();
+    const token = `mobile_${user.id}_${user.tenantId}_${timestamp}`;
 
     const response = NextResponse.json({
       success: true,
