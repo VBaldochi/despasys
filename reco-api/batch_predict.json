@@ -1,0 +1,50 @@
+﻿{
+  "items": [
+    {
+      "client_info": {
+        "tipo_cliente": "Cliente Final",
+        "total_servicos_cliente": 6,
+        "valor_total_gasto": 1320.0,
+        "dias_desde_ultimo_servico": 75,
+        "servicos_unicos_utilizados": 3
+      },
+      "history_counts": {
+        "LICENCIAMENTO": 4,
+        "VISTORIA": 1,
+        "TRANSFERENCIA": 0,
+        "DESBLOQUEIOS": 0
+      },
+      "vehicle_info": { "idade_veiculo": 7 }
+    },
+    {
+      "client_info": {
+        "tipo_cliente": "Empresa",
+        "total_servicos_cliente": 12,
+        "valor_total_gasto": 4200.0,
+        "dias_desde_ultimo_servico": 15,
+        "servicos_unicos_utilizados": 3
+      },
+      "history_counts": {
+        "VISTORIA": 5,
+        "TRANSFERENCIA": 2
+      },
+      "vehicle_info": { "idade_veiculo": 2 }
+    },
+    {
+      "client_info": {
+        "tipo_cliente": "Cliente Final",
+        "total_servicos_cliente": 2,
+        "valor_total_gasto": 180.0,
+        "dias_desde_ultimo_servico": 300,
+        "servicos_unicos_utilizados": 1
+      },
+      "history_counts": {
+        "DESBLOQUEIOS": 3,
+        "LICENCIAMENTO": 0,
+        "VISTORIA": 0,
+        "TRANSFERENCIA": 0
+      },
+      "vehicle_info": { "idade_veiculo": 12 }
+    }
+  ]
+}
