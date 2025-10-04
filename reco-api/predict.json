@@ -1,0 +1,16 @@
+﻿{
+  "client_info": {
+    "tipo_cliente": "Cliente Final",
+    "total_servicos_cliente": 6,
+    "valor_total_gasto": 1320.0,
+    "dias_desde_ultimo_servico": 75,
+    "servicos_unicos_utilizados": 3
+  },
+  "history_counts": {
+    "LICENCIAMENTO": 4,
+    "VISTORIA": 1,
+    "TRANSFERENCIA": 0,
+    "DESBLOQUEIOS": 0
+  },
+  "vehicle_info": { "idade_veiculo": 7 }
+}
