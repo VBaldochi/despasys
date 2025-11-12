@@ -1,8 +1,7 @@
 // Dual-Write Service: Neon + Firebase Sync
 import { prisma } from './prisma'
-import { database } from './firebase'
+import { adminDatabase } from './firebase-admin'
 import { DespaSysEventBus } from './pubsub'
-import { ref, set, push } from 'firebase/database'
 
 export class DualWriteService {
   
@@ -183,8 +182,8 @@ export class DualWriteService {
     data: any
   ) {
     try {
-      const dbRef = ref(database, `tenants/${tenantId}/${entity}/${entityId}`)
-      await set(dbRef, {
+      const dbRef = adminDatabase.ref(`tenants/${tenantId}/${entity}/${entityId}`)
+      await dbRef.set({
         ...data,
         lastSynced: Date.now()
       })
@@ -202,6 +201,8 @@ export class DualWriteService {
    */
   static async createNotification(tenantId: string, title: string, message: string, type: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR' = 'INFO', targetUser?: string) {
     try {
+      console.log('🔔 Criando notificação:', { tenantId, title, type })
+      
       const notification = {
         id: crypto.randomUUID(),
         title,
@@ -212,22 +213,33 @@ export class DualWriteService {
         read: false
       }
       
-      // Salvar no Firebase
-      const notifRef = ref(database, `tenants/${tenantId}/notifications`)
-      await push(notifRef, notification)
+      console.log('📦 Payload da notificação:', notification)
       
-      // Publicar evento
-      await DespaSysEventBus.publishEvent(tenantId, 'notifications', {
-        action: 'created',
-        data: notification
-      }, {
-        pushNotification: type === 'ERROR' || type === 'WARNING'
-      })
+      // Salvar no Firebase usando Admin SDK
+      const path = `tenants/${tenantId}/notifications`
+      console.log('🔥 Firebase path:', path)
       
+      const notifRef = adminDatabase.ref(path)
+      console.log('📍 Firebase Admin ref criada')
+      
+      const result = await notifRef.push(notification)
+      console.log('✅ Push executado! Key:', result.key)
+      
+      // Publicar evento Pub/Sub (desabilitado temporariamente - credenciais pendentes)
+      // console.log('📢 Publicando evento Pub/Sub...')
+      // await DespaSysEventBus.publishEvent(tenantId, 'notifications', {
+      //   action: 'created',
+      //   data: notification
+      // }, {
+      //   pushNotification: type === 'ERROR' || type === 'WARNING'
+      // })
+      
+      console.log('✅ Notificação completa!')
       return notification
       
     } catch (error) {
       console.error('❌ Erro ao criar notificação:', error)
+      console.error('❌ Stack:', error instanceof Error ? error.stack : 'N/A')
       throw error
     }
   }

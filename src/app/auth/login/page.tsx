@@ -5,6 +5,7 @@ import { signIn, getSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import Link from 'next/link'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -161,6 +162,17 @@ function LoginForm() {
               />
             </div>
 
+            {/* --- 2. LINK ADICIONADO AQUI --- */}
+            <div className="flex items-center justify-end text-sm">
+              <Link
+                href="/forgot-password"
+                className="font-medium text-blue-600 hover:text-blue-700"
+              >
+                Esqueceu sua senha?
+              </Link>
+            </div>
+            {/* --- FIM DA ADIÇÃO --- */}
+            
             <Button
               type="submit"
               disabled={isLoading}
