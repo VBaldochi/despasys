@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import NovaAvaliacaoModal from '@/components/admin/NovaAvaliacaoModal'
 import {
   DocumentTextIcon,
   MagnifyingGlassIcon,
@@ -46,6 +47,7 @@ export default function EvaluationsPage() {
   const [filterType, setFilterType] = useState<'ALL' | 'COMPRA' | 'VENDA' | 'SEGURO' | 'FINANCIAMENTO'>('ALL')
   const [selectedEvaluation, setSelectedEvaluation] = useState<Evaluation | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [isNovaAvaliacaoModalOpen, setIsNovaAvaliacaoModalOpen] = useState(false)
 
   // Mock data para demonstração
   const mockEvaluations: Evaluation[] = [
@@ -197,6 +199,28 @@ export default function EvaluationsPage() {
     ))
   }
 
+  const handleAddEvaluation = async (avaliacao: any) => {
+    try {
+      const response = await fetch('/api/evaluations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(avaliacao)
+      })
+
+      if (response.ok) {
+        const newEvaluation = await response.json()
+        setEvaluations(prev => [newEvaluation, ...prev])
+        alert('Avaliação criada com sucesso!')
+      } else {
+        const error = await response.json()
+        alert(`Erro ao criar avaliação: ${error.message || 'Erro desconhecido'}`)
+      }
+    } catch (error) {
+      console.error('Erro ao criar avaliação:', error)
+      alert('Erro ao criar avaliação')
+    }
+  }
+
   if (loading) {
     return (
       
@@ -235,7 +259,10 @@ export default function EvaluationsPage() {
                 <ArrowDownTrayIcon className="h-4 w-4" />
                 Exportar
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              <button 
+                onClick={() => setIsNovaAvaliacaoModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
                 <PlusIcon className="h-4 w-4" />
                 Nova Avaliação
               </button>
@@ -568,6 +595,13 @@ export default function EvaluationsPage() {
             </motion.div>
           </div>
         )}
+
+        {/* Nova Avaliação Modal */}
+        <NovaAvaliacaoModal
+          isOpen={isNovaAvaliacaoModalOpen}
+          onClose={() => setIsNovaAvaliacaoModalOpen(false)}
+          onSubmit={handleAddEvaluation}
+        />
       </div>
     
   )

@@ -20,6 +20,7 @@ import {
   ShieldCheckIcon,
   ArrowDownIcon
 } from '@heroicons/react/24/outline'
+import NovoLaudoModal, { LaudoFormData } from '@/components/admin/NovoLaudoModal'
 
 interface TechnicalReport {
   id: string
@@ -58,106 +59,38 @@ export default function TechnicalReportsPage() {
   const [filterPriority, setFilterPriority] = useState<'ALL' | 'BAIXA' | 'MEDIA' | 'ALTA' | 'URGENTE'>('ALL')
   const [selectedReport, setSelectedReport] = useState<TechnicalReport | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [showNovoLaudoModal, setShowNovoLaudoModal] = useState(false)
 
-  // Mock data para demonstração
-  const mockReports: TechnicalReport[] = [
-    {
-      id: '1',
-      customerName: 'João Silva',
-      customerPhone: '(16) 99999-1111',
-      customerEmail: 'joao@email.com',
-      vehicleBrand: 'Toyota',
-      vehicleModel: 'Corolla',
-      vehicleYear: '2020',
-      vehiclePlate: 'ABC-1234',
-      chassisNumber: '9BR53ZEC4L4123456',
-      reportType: 'VISTORIA',
-      purpose: 'COMPRA',
-      status: 'SOLICITADO',
-      requestedDate: '2025-07-28',
-      value: 650.00,
-      location: 'Franca-SP',
-      priority: 'MEDIA',
-      notes: 'Cliente quer vistoria completa antes da compra',
-      createdAt: '2025-07-27'
-    },
-    {
-      id: '2',
-      customerName: 'Maria Santos',
-      customerPhone: '(16) 99999-2222',
-      customerEmail: 'maria@email.com',
-      vehicleBrand: 'Honda',
-      vehicleModel: 'Civic',
-      vehicleYear: '2019',
-      vehiclePlate: 'DEF-5678',
-      reportType: 'PERICIA',
-      purpose: 'SEGURO',
-      status: 'EM_CAMPO',
-      requestedDate: '2025-07-26',
-      scheduledDate: '2025-07-28',
-      value: 850.00,
-      location: 'Ribeirão Preto-SP',
-      priority: 'ALTA',
-      findings: ['Danos na lateral direita', 'Para-choque traseiro danificado', 'Farol esquerdo trincado'],
-      notes: 'Sinistro ocorrido em 25/07/2025',
-      createdAt: '2025-07-25'
-    },
-    {
-      id: '3',
-      customerName: 'Carlos Oliveira',
-      customerPhone: '(16) 99999-3333',
-      vehicleBrand: 'Volkswagen',
-      vehicleModel: 'Gol',
-      vehicleYear: '2018',
-      vehiclePlate: 'GHI-9012',
-      reportType: 'AVALIACAO',
-      purpose: 'VENDA',
-      status: 'CONCLUIDO',
-      requestedDate: '2025-07-24',
-      scheduledDate: '2025-07-25',
-      completedDate: '2025-07-26',
-      value: 480.00,
-      location: 'Franca-SP',
-      priority: 'BAIXA',
-      findings: ['Veículo em bom estado geral', 'Pequenos riscos na pintura', 'Pneus em bom estado'],
-      conclusion: 'Veículo avaliado em R$ 32.000,00 considerando o mercado atual',
-      recommendations: ['Reparar pequenos riscos antes da venda', 'Realizar revisão preventiva'],
-      attachments: ['laudo_003.pdf', 'fotos_veiculo.zip'],
-      createdAt: '2025-07-23'
-    },
-    {
-      id: '4',
-      customerName: 'Ana Costa',
-      customerPhone: '(16) 99999-4444',
-      customerEmail: 'ana@email.com',
-      vehicleBrand: 'Ford',
-      vehicleModel: 'Ka',
-      vehicleYear: '2021',
-      vehiclePlate: 'JKL-3456',
-      reportType: 'SINISTRO',
-      purpose: 'SEGURO',
-      status: 'ELABORANDO',
-      requestedDate: '2025-07-27',
-      scheduledDate: '2025-07-28',
-      value: 950.00,
-      location: 'São Carlos-SP',
-      priority: 'URGENTE',
-      findings: ['Perda total do veículo', 'Chassi comprometido', 'Motor com avarias severas'],
-      notes: 'Acidente grave - perda total confirmada',
-      createdAt: '2025-07-26'
-    }
-  ]
+  // Statistics
+  const [stats, setStats] = useState({
+    totalLaudos: 0,
+    emAndamento: 0,
+    concluidos: 0,
+    valorMedio: 0
+  })
 
+  // Fetch reports from API
   useEffect(() => {
-    // Simular carregamento dos dados
-    setTimeout(() => {
-      setReports(mockReports)
-      setFilteredReports(mockReports)
-      setLoading(false)
-    }, 1000)
+    fetchReports()
   }, [])
 
-  // Filtrar laudos
+  const fetchReports = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/reports')
+      if (response.ok) {
+        const data = await response.json()
+        setReports(data.reports)
+        setStats(data.stats)
+      }
+    } catch (error) {
+      console.error('Error fetching reports:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Filter reports
   useEffect(() => {
     let filtered = reports
 
@@ -266,13 +199,68 @@ export default function TechnicalReportsPage() {
   }
 
   const handleStatusChange = (reportId: string, newStatus: 'EM_ANALISE' | 'EM_CAMPO' | 'ELABORANDO' | 'CONCLUIDO' | 'CANCELADO') => {
-    setReports(prev => prev.map(report => 
-      report.id === reportId ? { 
-        ...report, 
-        status: newStatus,
-        ...(newStatus === 'CONCLUIDO' ? { completedDate: new Date().toISOString().split('T')[0] } : {})
-      } : report
-    ))
+    handleChangeStatus(reportId, newStatus)
+  }
+
+  const handleAddLaudo = async (data: LaudoFormData) => {
+    try {
+      const response = await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+
+      if (response.ok) {
+        await fetchReports() // Reload reports
+        setShowNovoLaudoModal(false)
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Erro ao criar laudo')
+      }
+    } catch (error) {
+      console.error('Error creating report:', error)
+      alert('Erro ao criar laudo')
+    }
+  }
+
+  const handleChangeStatus = async (reportId: string, newStatus: string) => {
+    try {
+      const response = await fetch('/api/reports', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: reportId, status: newStatus })
+      })
+
+      if (response.ok) {
+        await fetchReports() // Reload reports
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Erro ao atualizar status')
+      }
+    } catch (error) {
+      console.error('Error updating status:', error)
+      alert('Erro ao atualizar status')
+    }
+  }
+
+  const handleDeleteReport = async (reportId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este laudo?')) return
+
+    try {
+      const response = await fetch(`/api/reports?id=${reportId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        await fetchReports() // Reload reports
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Erro ao excluir laudo')
+      }
+    } catch (error) {
+      console.error('Error deleting report:', error)
+      alert('Erro ao excluir laudo')
+    }
   }
 
   if (loading) {
@@ -281,16 +269,6 @@ export default function TechnicalReportsPage() {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
-  }
-
-  // Estatísticas dos laudos
-  const stats = {
-    total: reports.length,
-    pending: reports.filter(r => ['SOLICITADO', 'EM_ANALISE', 'EM_CAMPO', 'ELABORANDO'].includes(r.status)).length,
-    inProgress: reports.filter(r => ['EM_CAMPO', 'ELABORANDO'].includes(r.status)).length,
-    completed: reports.filter(r => r.status === 'CONCLUIDO').length,
-    totalValue: reports.reduce((sum, r) => sum + r.value, 0),
-    avgValue: reports.length > 0 ? reports.reduce((sum, r) => sum + r.value, 0) / reports.length : 0
   }
 
   return (
@@ -310,7 +288,10 @@ export default function TechnicalReportsPage() {
                 <ArrowDownTrayIcon className="h-4 w-4" />
                 Exportar
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              <button 
+                onClick={() => setShowNovoLaudoModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
                 <PlusIcon className="h-4 w-4" />
                 Novo Laudo
               </button>
@@ -328,7 +309,7 @@ export default function TechnicalReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total de Laudos</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalLaudos}</p>
               </div>
               <DocumentCheckIcon className="h-8 w-8 text-blue-600" />
             </div>
@@ -343,7 +324,7 @@ export default function TechnicalReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Em Andamento</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.inProgress}</p>
+                <p className="text-2xl font-bold text-yellow-600">{stats.emAndamento}</p>
               </div>
               <ClockIcon className="h-8 w-8 text-yellow-600" />
             </div>
@@ -358,7 +339,7 @@ export default function TechnicalReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Concluídos</p>
-                <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+                <p className="text-2xl font-bold text-green-600">{stats.concluidos}</p>
               </div>
               <CheckIcon className="h-8 w-8 text-green-600" />
             </div>
@@ -373,7 +354,7 @@ export default function TechnicalReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Valor Médio</p>
-                <p className="text-2xl font-bold text-purple-600">{formatCurrency(stats.avgValue)}</p>
+                <p className="text-2xl font-bold text-purple-600">{formatCurrency(stats.valorMedio)}</p>
               </div>
               <BanknotesIcon className="h-8 w-8 text-purple-600" />
             </div>
@@ -786,6 +767,13 @@ export default function TechnicalReportsPage() {
             </motion.div>
           </div>
         )}
+
+        {/* Novo Laudo Modal */}
+        <NovoLaudoModal
+          isOpen={showNovoLaudoModal}
+          onClose={() => setShowNovoLaudoModal(false)}
+          onSubmit={handleAddLaudo}
+        />
       </div>
   )
 }

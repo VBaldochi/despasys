@@ -412,3 +412,327 @@ enum StatusTransacao {
   CANCELADO
   ESTORNADO
 }
+
+model Evaluation {
+  id               String            @id @default(cuid())
+  tenantId         String
+  customerId       String?
+  customerName     String
+  customerPhone    String
+  vehicleBrand     String
+  vehicleModel     String
+  vehicleYear      String
+  vehiclePlate     String
+  evaluationType   EvaluationType
+  purpose          String
+  requestedDate    DateTime          @default(now())
+  scheduledDate    DateTime?
+  completedDate    DateTime?
+  estimatedValue   Float?
+  finalValue       Float?
+  status           EvaluationStatus  @default(REQUESTED)
+  location         String
+  observations     String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@map("evaluations")
+}
+
+model Registration {
+  id                   String              @id @default(cuid())
+  tenantId             String
+  customerId           String?
+  customerName         String
+  customerCpf          String
+  vehicleBrand         String
+  vehicleModel         String
+  vehicleYear          String
+  vehicleColor         String
+  vehicleType          String
+  chassisNumber        String?
+  isZeroKm             Boolean             @default(false)
+  invoice              String?
+  invoiceDate          DateTime?
+  dealership           String?
+  status               RegistrationStatus  @default(PENDING_DOCS)
+  requestedDate        DateTime            @default(now())
+  completedDate        DateTime?
+  observations         String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  @@map("registrations")
+}
+
+model Licensing {
+  id               String          @id @default(cuid())
+  tenantId         String
+  customerId       String?
+  customerName     String
+  vehiclePlate     String
+  vehicleBrand     String
+  vehicleModel     String
+  vehicleYear      String
+  renavam          String
+  exercicio        String
+  expirationDate   DateTime
+  paymentDate      DateTime?
+  status           LicensingStatus @default(PENDING)
+  taxValue         Float
+  serviceValue     Float
+  totalValue       Float
+  paymentMethod    String?
+  observations     String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@map("licensings")
+}
+
+model Transfer {
+  id                String         @id @default(cuid())
+  tenantId          String
+  buyerId           String?
+  buyerName         String
+  buyerCpf          String
+  buyerPhone        String
+  buyerAddress      String?
+  sellerId          String?
+  sellerName        String
+  sellerCpf         String
+  sellerPhone       String
+  vehiclePlate      String
+  vehicleBrand      String
+  vehicleModel      String
+  vehicleYear       String
+  chassisNumber     String?
+  renavam           String
+  transferValue     Float?
+  serviceValue      Float
+  status            TransferStatus @default(PENDING_DOCS)
+  requestedDate     DateTime       @default(now())
+  completedDate     DateTime?
+  observations      String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@map("transfers")
+}
+
+model Unlock {
+  id                String       @id @default(cuid())
+  tenantId          String
+  customerId        String?
+  customerName      String
+  customerCpf       String
+  customerPhone     String
+  vehiclePlate      String
+  vehicleBrand      String
+  vehicleModel      String
+  vehicleYear       String
+  renavam           String
+  unlockType        UnlockType
+  blockReason       String
+  blockDate         DateTime?
+  blockEntity       String?
+  unlockValue       Float
+  serviceValue      Float
+  totalValue        Float
+  status            UnlockStatus @default(ANALYSIS)
+  requestedDate     DateTime     @default(now())
+  completedDate     DateTime?
+  observations      String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@map("unlocks")
+}
+
+model Despesa {
+  id                String    @id @default(cuid())
+  tenantId          String
+  fornecedor        String
+  descricao         String
+  categoria         String
+  tipoDespesa       String
+  valor             Float
+  dataEmissao       DateTime
+  dataVencimento    DateTime
+  dataPagamento     DateTime?
+  status            String
+  recorrente        Boolean   @default(false)
+  periodicidade     String?
+  formaPagamento    String
+  observacoes       String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("despesas")
+}
+
+model Receita {
+  id                String    @id @default(cuid())
+  tenantId          String
+  numero            String
+  customerId        String?
+  customerName      String
+  processoId        String?
+  servico           String
+  descricao         String
+  valor             Float
+  dataEmissao       DateTime
+  dataVencimento    DateTime
+  dataPagamento     DateTime?
+  status            String
+  metodoPagamento   String?
+  observacoes       String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([numero, tenantId])
+  @@map("receitas")
+}
+
+model FluxoCaixa {
+  id                String   @id @default(cuid())
+  tenantId          String
+  tipo              String
+  descricao         String
+  categoria         String
+  origem            String?
+  destino           String?
+  valor             Float
+  data              DateTime
+  metodoPagamento   String
+  observacoes       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("fluxo_caixa")
+}
+
+model TechnicalReport {
+  id                String          @id @default(cuid())
+  tenantId          String
+  customerName      String
+  customerPhone     String
+  customerEmail     String?
+  vehicleBrand      String
+  vehicleModel      String
+  vehicleYear       String
+  vehiclePlate      String
+  chassisNumber     String?
+  reportType        ReportType
+  purpose           ReportPurpose
+  status            ReportStatus    @default(SOLICITADO)
+  requestedDate     DateTime        @default(now())
+  scheduledDate     DateTime?
+  completedDate     DateTime?
+  value             Float
+  location          String
+  findings          String[]
+  conclusion        String?
+  recommendations   String[]
+  attachments       String[]
+  priority          ReportPriority  @default(MEDIA)
+  notes             String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@map("technical_reports")
+}
+
+enum EvaluationType {
+  COMPLETA
+  BASICA
+  LAUDO
+  PERICIA
+}
+
+enum EvaluationStatus {
+  REQUESTED
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum RegistrationStatus {
+  PENDING_DOCS
+  DOCS_RECEIVED
+  IN_ANALYSIS
+  DETRAN_PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum LicensingStatus {
+  PENDING
+  DOCS_SENT
+  PROCESSING
+  COMPLETED
+  OVERDUE
+  CANCELLED
+}
+
+enum TransferStatus {
+  PENDING_DOCS
+  DOCS_RECEIVED
+  WAITING_PAYMENT
+  PAYMENT_CONFIRMED
+  DETRAN_PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum UnlockType {
+  JUDICIAL
+  MULTA
+  ROUBO_FURTO
+  RESTRICAO_AMBIENTAL
+  RESTRICAO_JUDICIAL
+  OUTROS
+}
+
+enum UnlockStatus {
+  ANALYSIS
+  PENDING_DOCS
+  PROCESSING
+  DETRAN_PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum ReportType {
+  VISTORIA
+  PERICIA
+  AVALIACAO
+  SINISTRO
+  TRANSFERENCIA
+}
+
+enum ReportPurpose {
+  COMPRA
+  VENDA
+  SEGURO
+  FINANCIAMENTO
+  JUDICIAL
+  ADMINISTRATIVO
+}
+
+enum ReportStatus {
+  SOLICITADO
+  EM_ANALISE
+  EM_CAMPO
+  ELABORANDO
+  CONCLUIDO
+  CANCELADO
+}
+
+enum ReportPriority {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
