@@ -1,7 +1,4 @@
 """
-API Lazuli Reco — versão estendida
-----------------------------------
-✅ Requisitos:
 - FastAPI + Auth NextAuth (Bearer JWT HS256 via NEXTAUTH_SECRET)
 - Multi-tenant por `X-Tenant: <slug>` ou `?tenant=<slug>`
 - Postgres/Neon (SQLAlchemy async + asyncpg)

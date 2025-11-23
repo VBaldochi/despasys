@@ -1,0 +1,82 @@
+README_EXECUCAO_LOCAL.txt
+🚀 COMO RODAR A API DE RECOMENDAÇÃO LOCALMENTE
+1) Entrar na pasta da API
+
+Abra o PowerShell:
+
+cd despasys\reco-api
+
+2) Ativar o ambiente virtual (venv)
+.\.venv\Scripts\Activate.ps1
+
+
+Se estiver correto, o terminal ficará assim:
+
+(.venv) PS C:\...>
+
+3) Instalar dependências (apenas primeira vez)
+pip install -r requirements.txt
+
+4) Iniciar a API
+uvicorn app:app --reload --port 8020
+
+
+A API inicia em:
+
+http://127.0.0.1:8020
+
+5) Testar se está OK
+
+Abra no navegador:
+
+http://127.0.0.1:8020/health
+
+
+Se aparecer:
+
+{"ok": true}
+
+
+API está funcionando ✅
+
+PASSOS PARA TREINAR NOVO CSV
+
+Gere o token JWT dentro da própria API.
+
+Execute no PowerShell (fora da API rodando, em nova aba) o comando de envio de CSV:
+
+$Url = "http://127.0.0.1:8020/ml/train/import?tenant=demo&fmt=csv"
+$TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJhZG1pbkBkZW1vLmNvbSIsIm5hbWUiOiJBZG1pbiBEZXYifQ.B0gRcbFcTyiDwKpIN2AUJECyE_Hgg-2no17prqBtVi0"
+$CsvPath = "C:\Users\Samuel\Documents\Projetos\API Vini\Nova pasta\despasys\reco-api\dataset.csv"
+
+Add-Type -AssemblyName System.Net.Http
+$http = [System.Net.Http.HttpClient]::new()
+$mp   = [System.Net.Http.MultipartFormDataContent]::new()
+$fs   = [System.IO.File]::OpenRead($CsvPath)
+$fc   = New-Object System.Net.Http.StreamContent($fs)
+$fc.Headers.ContentType = 'text/csv'
+$mp.Add($fc, "file", "dataset.csv")
+$req = [System.Net.Http.HttpRequestMessage]::new([System.Net.Http.HttpMethod]::Post, $Url)
+$req.Headers.Authorization = New-Object System.Net.Http.Headers.AuthenticationHeaderValue('Bearer', $TOKEN)
+$req.Content = $mp
+$resp = $http.SendAsync($req).Result
+$resp.StatusCode
+$resp.Content.ReadAsStringAsync().Result
+$fs.Dispose(); $mp.Dispose(); $http.Dispose()
+
+COMO EXECUTAR UM PREDICT (1 cliente)
+
+Crie arquivo predict.json e rode:
+
+Invoke-RestMethod -Method POST "http://127.0.0.1:8020/ml/predict?tenant=demo" `
+  -Headers @{ Authorization = "Bearer $TOKEN" } `
+  -ContentType "application/json" `
+  -InFile ".\predict.json"
+
+IMPORTANTE
+
+Sempre rodar uvicorn dentro da venv
+
+Sempre treinar usando o tenant = demo
+
+Para API subir: banco Postgres deve estar rodando local
