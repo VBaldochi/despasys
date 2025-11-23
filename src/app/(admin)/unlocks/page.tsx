@@ -18,6 +18,7 @@ import {
   ExclamationCircleIcon,
   ShieldExclamationIcon
 } from '@heroicons/react/24/outline'
+import NovoDesbloqueioModal, { UnlockFormData } from '@/components/admin/NovoDesbloqueioModal'
 
 interface Unlock {
   id: string
@@ -65,6 +66,7 @@ export default function UnlocksPage() {
   const [filterType, setFilterType] = useState<'ALL' | 'ADMINISTRATIVO' | 'JUDICIAL' | 'MULTAS' | 'IPVA' | 'FURTO_ROUBO' | 'OUTROS'>('ALL')
   const [selectedUnlock, setSelectedUnlock] = useState<Unlock | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [isNovoDesbloqueioModalOpen, setIsNovoDesbloqueioModalOpen] = useState(false)
 
   // Mock data para demonstração
   const mockUnlocks: Unlock[] = [
@@ -193,13 +195,31 @@ export default function UnlocksPage() {
   ]
 
   useEffect(() => {
-    // Simular carregamento dos dados
-    setTimeout(() => {
+    fetchUnlocks()
+  }, [])
+
+  const fetchUnlocks = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/unlocks')
+      if (response.ok) {
+        const data = await response.json()
+        setUnlocks(data)
+        setFilteredUnlocks(data)
+      } else {
+        // Fallback to mock data if API fails
+        setUnlocks(mockUnlocks)
+        setFilteredUnlocks(mockUnlocks)
+      }
+    } catch (error) {
+      console.error('Error fetching unlocks:', error)
+      // Fallback to mock data
       setUnlocks(mockUnlocks)
       setFilteredUnlocks(mockUnlocks)
+    } finally {
       setLoading(false)
-    }, 1000)
-  }, [])
+    }
+  }
 
   // Filtrar desbloqueios
   useEffect(() => {
@@ -319,6 +339,27 @@ export default function UnlocksPage() {
     ))
   }
 
+  const handleAddUnlock = async (data: UnlockFormData) => {
+    try {
+      const response = await fetch('/api/unlocks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+
+      if (response.ok) {
+        await fetchUnlocks()
+      } else {
+        const error = await response.json()
+        console.error('Error creating unlock:', error)
+      }
+    } catch (error) {
+      console.error('Error creating unlock:', error)
+    }
+  }
+
   if (loading) {
     return (
       
@@ -357,7 +398,10 @@ export default function UnlocksPage() {
                 <ArrowDownTrayIcon className="h-4 w-4" />
                 Exportar
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              <button 
+                onClick={() => setIsNovoDesbloqueioModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
                 <PlusIcon className="h-4 w-4" />
                 Novo Desbloqueio
               </button>
@@ -832,6 +876,13 @@ export default function UnlocksPage() {
             </motion.div>
           </div>
         )}
+
+        {/* Modal Novo Desbloqueio */}
+        <NovoDesbloqueioModal
+          isOpen={isNovoDesbloqueioModalOpen}
+          onClose={() => setIsNovoDesbloqueioModalOpen(false)}
+          onSubmit={handleAddUnlock}
+        />
       </div>
     
   )

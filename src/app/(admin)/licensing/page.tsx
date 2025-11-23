@@ -18,6 +18,7 @@ import {
   TruckIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline'
+import NovoLicenciamentoModal from '@/components/admin/NovoLicenciamentoModal'
 
 interface Licensing {
   id: string
@@ -55,6 +56,7 @@ export default function LicensingPage() {
   const [filterPriority, setFilterPriority] = useState<'ALL' | 'NORMAL' | 'URGENTE'>('ALL')
   const [selectedLicensing, setSelectedLicensing] = useState<Licensing | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [isNovoLicenciamentoModalOpen, setIsNovoLicenciamentoModalOpen] = useState(false)
 
   // Mock data para demonstração
   const mockLicensings: Licensing[] = [
@@ -156,13 +158,48 @@ export default function LicensingPage() {
   ]
 
   useEffect(() => {
-    // Simular carregamento dos dados
-    setTimeout(() => {
+    fetchLicensings()
+  }, [])
+
+  const fetchLicensings = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/licensings')
+      if (response.ok) {
+        const data = await response.json()
+        const licensingsData = data.length > 0 ? data : mockLicensings
+        setLicensings(licensingsData)
+        setFilteredLicensings(licensingsData)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar licenciamentos:', error)
       setLicensings(mockLicensings)
       setFilteredLicensings(mockLicensings)
+    } finally {
       setLoading(false)
-    }, 1000)
-  }, [])
+    }
+  }
+
+  const handleAddLicensing = async (licenciamentoData: any) => {
+    try {
+      const response = await fetch('/api/licensings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(licenciamentoData)
+      })
+
+      if (response.ok) {
+        await fetchLicensings()
+        setIsNovoLicenciamentoModalOpen(false)
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Erro ao criar licenciamento')
+      }
+    } catch (error) {
+      console.error('Erro ao criar licenciamento:', error)
+      alert('Erro ao criar licenciamento')
+    }
+  }
 
   // Filtrar licenciamentos
   useEffect(() => {
@@ -308,7 +345,10 @@ export default function LicensingPage() {
                 <ArrowDownTrayIcon className="h-4 w-4" />
                 Exportar
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              <button 
+                onClick={() => setIsNovoLicenciamentoModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
                 <PlusIcon className="h-4 w-4" />
                 Novo Licenciamento
               </button>
@@ -691,6 +731,13 @@ export default function LicensingPage() {
             </motion.div>
           </div>
         )}
+
+        {/* Modal Novo Licenciamento */}
+        <NovoLicenciamentoModal
+          isOpen={isNovoLicenciamentoModalOpen}
+          onClose={() => setIsNovoLicenciamentoModalOpen(false)}
+          onSubmit={handleAddLicensing}
+        />
       </div>
     
   )

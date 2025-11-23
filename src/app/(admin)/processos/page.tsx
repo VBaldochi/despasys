@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   FileText, 
   Plus, 
@@ -17,53 +17,69 @@ import {
   AlertCircle,
   XCircle
 } from 'lucide-react'
+import NovoProcessoModal from '@/components/admin/NovoProcessoModal'
 
 export default function ProcessosPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('todos')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [processos, setProcessos] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const processos = [
-    {
-      id: 'PROC-001',
-      tipo: 'Transferência de Veículo',
-      cliente: 'João Silva',
-      veiculo: 'Honda Civic 2020',
-      status: 'em_andamento',
-      dataInicio: '2024-01-15',
-      prazo: '2024-02-15',
-      valor: 850.00
-    },
-    {
-      id: 'PROC-002',
-      tipo: 'Licenciamento',
-      cliente: 'Maria Santos',
-      veiculo: 'Toyota Corolla 2019',
-      status: 'concluido',
-      dataInicio: '2024-01-10',
-      prazo: '2024-01-25',
-      valor: 450.00
-    },
-    {
-      id: 'PROC-003',
-      tipo: 'Renovação CNH',
-      cliente: 'Pedro Costa',
-      veiculo: '-',
-      status: 'pendente',
-      dataInicio: '2024-01-20',
-      prazo: '2024-02-20',
-      valor: 320.00
-    },
-    {
-      id: 'PROC-004',
-      tipo: 'Segunda Via CRV',
-      cliente: 'Ana Lima',
-      veiculo: 'Fiat Uno 2018',
-      status: 'atrasado',
-      dataInicio: '2023-12-15',
-      prazo: '2024-01-15',
-      valor: 180.00
+  useEffect(() => {
+    fetchProcessos()
+  }, [])
+
+  const fetchProcessos = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/processes')
+      
+      if (response.ok) {
+        const data = await response.json()
+        setProcessos(data.map((p: any) => ({
+          id: p.numero || p.id,
+          tipo: p.tipo || 'Sem tipo',
+          cliente: p.customer?.name || 'Cliente não informado',
+          veiculo: p.veiculo?.placa ? `${p.veiculo.modelo} ${p.veiculo.ano}` : '-',
+          status: p.status?.toLowerCase() || 'pendente',
+          dataInicio: new Date(p.createdAt).toLocaleDateString('pt-BR'),
+          prazo: p.prazo ? new Date(p.prazo).toLocaleDateString('pt-BR') : '-',
+          valor: p.valor || 0
+        })))
+      } else {
+        console.error('Erro ao buscar processos')
+      }
+    } catch (error) {
+      console.error('Erro na requisição:', error)
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
+
+  const handleAddProcesso = async (processo: any) => {
+    try {
+      const response = await fetch('/api/processes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(processo)
+      })
+
+      if (response.ok) {
+        await fetchProcessos() // Recarregar lista
+        setIsModalOpen(false)
+      } else {
+        const error = await response.json()
+        console.error('Erro ao criar processo:', error.error)
+        alert('Erro ao criar processo: ' + error.error)
+      }
+    } catch (error) {
+      console.error('Erro na requisição:', error)
+      alert('Erro ao criar processo')
+    }
+  }
 
   const getStatusInfo = (status: string) => {
     switch (status) {
@@ -99,7 +115,10 @@ export default function ProcessosPage() {
             <h1 className="text-3xl font-bold text-gray-900">Processos</h1>
             <p className="text-gray-600 mt-1">Gerencie todos os processos em andamento</p>
           </div>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700 transition-colors">
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700 transition-colors"
+          >
             <Plus className="h-5 w-5 mr-2" />
             Novo Processo
           </button>
@@ -275,6 +294,13 @@ export default function ProcessosPage() {
           </div>
         )}
       </div>
+
+      {/* Modal Novo Processo */}
+      <NovoProcessoModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleAddProcesso}
+      />
     </div>
   )
 }

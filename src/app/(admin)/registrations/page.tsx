@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import NovoRegistroModal from '@/components/admin/NovoRegistroModal'
 import {
   ClipboardDocumentListIcon,
   MagnifyingGlassIcon,
@@ -67,6 +68,7 @@ export default function RegistrationsPage() {
   const [filterZeroKm, setFilterZeroKm] = useState<'ALL' | 'SIM' | 'NAO'>('ALL')
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [isNovoRegistroModalOpen, setIsNovoRegistroModalOpen] = useState(false)
 
   // Mock data para demonstração
   const mockRegistrations: Registration[] = [
@@ -349,6 +351,28 @@ export default function RegistrationsPage() {
     ))
   }
 
+  const handleAddRegistration = async (registro: any) => {
+    try {
+      const response = await fetch('/api/registrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(registro)
+      })
+
+      if (response.ok) {
+        const newRegistration = await response.json()
+        setRegistrations(prev => [newRegistration, ...prev])
+        alert('Registro criado com sucesso!')
+      } else {
+        const error = await response.json()
+        alert(`Erro ao criar registro: ${error.message || 'Erro desconhecido'}`)
+      }
+    } catch (error) {
+      console.error('Erro ao criar registro:', error)
+      alert('Erro ao criar registro')
+    }
+  }
+
   if (loading) {
     return (
       
@@ -387,7 +411,10 @@ export default function RegistrationsPage() {
                 <ArrowDownTrayIcon className="h-4 w-4" />
                 Exportar
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              <button 
+                onClick={() => setIsNovoRegistroModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
                 <PlusIcon className="h-4 w-4" />
                 Novo Registro
               </button>
@@ -724,6 +751,13 @@ export default function RegistrationsPage() {
             </div>
           </div>
         )}
+
+        {/* Novo Registro Modal */}
+        <NovoRegistroModal
+          isOpen={isNovoRegistroModalOpen}
+          onClose={() => setIsNovoRegistroModalOpen(false)}
+          onSubmit={handleAddRegistration}
+        />
       </div>
     
   )
