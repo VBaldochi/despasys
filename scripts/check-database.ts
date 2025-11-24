@@ -5,51 +5,41 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('🔍 Verificando dados no banco Neon...\n')
 
-  // Check Tenants
-  const tenants = await prisma.tenant.findMany()
-  console.log(`📊 Tenants: ${tenants.length}`)
-  tenants.forEach(t => console.log(`  - ${t.id}: ${t.name} (${t.status})`))
-  console.log()
+  // Listar todas as tabelas principais do schema
+  const tables = [
+    { label: '📊 Tenants', fn: () => prisma.tenant.count() },
+    { label: '👤 Users', fn: () => prisma.user.count() },
+    { label: '👥 Customers', fn: () => prisma.customer.count() },
+    { label: '🚗 Veículos', fn: () => prisma.veiculo.count() },
+    { label: '📄 Processos', fn: () => prisma.process.count() },
+    { label: '📑 Documentos', fn: () => prisma.documento.count() },
+    { label: '🕒 Timeline Events', fn: () => prisma.timelineEvent.count() },
+    { label: '💸 Transações', fn: () => prisma.transacao.count() },
+    { label: '💬 Quotes', fn: () => prisma.quote.count() },
+    { label: '📅 Appointments', fn: () => prisma.appointment.count() },
+    { label: '💰 Despesas', fn: () => prisma.despesa.count() },
+    { label: '💵 Receitas', fn: () => prisma.receita.count() },
+    { label: '📊 Fluxo de Caixa', fn: () => prisma.fluxoCaixa.count() },
+    { label: '🔍 Avaliações', fn: () => prisma.evaluation.count() },
+    { label: '📋 Registros', fn: () => prisma.registration.count() },
+    { label: '📝 Licenciamentos', fn: () => prisma.licensing.count() },
+    { label: '🔄 Transferências', fn: () => prisma.transfer.count() },
+    { label: '🔓 Desbloqueios', fn: () => prisma.unlock.count() },
+    { label: '📄 Laudos Técnicos', fn: () => prisma.technicalReport.count() },
+    { label: '🔑 Accounts', fn: () => prisma.account.count() },
+    { label: '🔑 Sessions', fn: () => prisma.session.count() },
+    { label: '🔑 VerificationTokens', fn: () => prisma.verificationToken.count() },
+  ];
 
-  // Check Users
-  const users = await prisma.user.findMany()
-  console.log(`👤 Users: ${users.length}`)
-  users.forEach(u => console.log(`  - ${u.email} (${u.role})`))
-  console.log()
+  for (const t of tables) {
+    try {
+      const count = await t.fn();
+      console.log(`${t.label}: ${count}`);
+    } catch (e) {
+      console.log(`${t.label}: erro ao consultar`);
+    }
+  }
 
-  // Check Customers
-  const customers = await prisma.customer.findMany()
-  console.log(`👥 Customers: ${customers.length}`)
-  console.log()
-
-  // Check new models
-  const despesas = await prisma.despesa.findMany()
-  console.log(`💰 Despesas: ${despesas.length}`)
-  
-  const receitas = await prisma.receita.findMany()
-  console.log(`💵 Receitas: ${receitas.length}`)
-  
-  const fluxoCaixa = await prisma.fluxoCaixa.findMany()
-  console.log(`📊 Fluxo de Caixa: ${fluxoCaixa.length}`)
-  
-  const evaluations = await prisma.evaluation.findMany()
-  console.log(`🔍 Avaliações: ${evaluations.length}`)
-  
-  const registrations = await prisma.registration.findMany()
-  console.log(`📋 Registros: ${registrations.length}`)
-  
-  const licensings = await prisma.licensing.findMany()
-  console.log(`📝 Licenciamentos: ${licensings.length}`)
-  
-  const transfers = await prisma.transfer.findMany()
-  console.log(`🔄 Transferências: ${transfers.length}`)
-  
-  const unlocks = await prisma.unlock.findMany()
-  console.log(`🔓 Desbloqueios: ${unlocks.length}`)
-  
-  const reports = await prisma.technicalReport.findMany()
-  console.log(`📄 Laudos Técnicos: ${reports.length}`)
-  
   console.log('\n✅ Verificação concluída!')
 }
 

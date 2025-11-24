@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateMobileAuth } from '@/lib/mobile-auth';
+import { DespaSysEventBus } from '@/lib/pubsub';
 
 // Função para mapear status do banco para mobile
 function mapStatusToMobile(status: string): 'aguardando' | 'andamento' | 'finalizado' | 'cancelado' {
@@ -138,12 +139,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { titulo, clienteId, veiculoId, tipoServico, prazo, valor, descricao, prioridade } = body;
+    const { titulo, customerId, veiculoId, tipoServico, prazo, valor, descricao, prioridade } = body;
 
     // Verificar se o cliente existe
     const customer = await prisma.customer.findFirst({
       where: {
-        id: clienteId,
+        id: customerId,
         tenantId: user.tenantId,
       },
     });
@@ -178,7 +179,7 @@ export async function POST(request: NextRequest) {
       data: {
         tenantId: user.tenantId,
         numero: `PROC-${Date.now()}`,
-        customerId: clienteId,
+        customerId: customerId,
         veiculoId: veiculoId || null,
         responsavelId: user.id,
         tipoServico: tipoServicoEnum as any,
@@ -234,6 +235,21 @@ export async function POST(request: NextRequest) {
       updatedAt: processo.updatedAt.toISOString(),
     };
 
+    // Publique evento de criação de processo no PubSub
+    try {
+      await DespaSysEventBus.publishEvent(
+        user.tenantId,
+        'processes',
+        {
+          ...processoFormatted,
+          action: 'created',
+        },
+        { source: 'mobile-api' }
+      );
+    } catch (pubsubError) {
+      console.error('Erro ao publicar evento PubSub:', pubsubError);
+      // Não bloqueia a resposta ao cliente
+    }
     return NextResponse.json(processoFormatted);
   } catch (error) {
     console.error('Erro ao criar processo:', error);

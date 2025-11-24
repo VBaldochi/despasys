@@ -18,9 +18,21 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const customerId = searchParams.get('customerId')
 
+    // Get tenant ID from database
+    const tenant = await prisma.tenant.findFirst({
+      orderBy: { createdAt: 'asc' }
+    })
+    
+    if (!tenant) {
+      return NextResponse.json(
+        { error: 'Tenant não encontrado' },
+        { status: 404 }
+      )
+    }
+
     // Build where clause
     const where: any = {
-      tenantId: 'tenant-default' // TODO: session.user.tenantId when multi-tenant is active
+      tenantId: tenant.id
     }
 
     if (status && status !== 'ALL') {
@@ -33,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch all invoices for stats (without filters)
     const allReceitas = await prisma.receita.findMany({
-      where: { tenantId: 'tenant-default' },
+      where: { tenantId: tenant.id },
       orderBy: { dataVencimento: 'desc' }
     })
 
@@ -45,11 +57,11 @@ export async function GET(request: NextRequest) {
 
     // Calculate statistics
     const totalReceitas = allReceitas
-      .filter(r => r.status === 'PAGA')
+      .filter(r => r.status === 'PAGO' || r.status === 'PAGA')
       .reduce((sum, r) => sum + r.valor, 0)
     
     const totalPendente = allReceitas
-      .filter(r => r.status === 'PENDENTE' || r.status === 'VENCIDA')
+      .filter(r => r.status === 'PENDENTE' || r.status === 'VENCIDA' || r.status === 'VENCIDO')
       .reduce((sum, r) => sum + r.valor, 0)
     
     const faturasEmitidas = allReceitas.length
@@ -57,6 +69,8 @@ export async function GET(request: NextRequest) {
     const ticketMedio = allReceitas.length > 0 
       ? allReceitas.reduce((sum, r) => sum + r.valor, 0) / allReceitas.length 
       : 0
+    
+    const faturasVencidas = allReceitas.filter(r => r.status === 'VENCIDA' || r.status === 'VENCIDO').length
 
     return NextResponse.json({
       faturas: receitas,
@@ -65,7 +79,7 @@ export async function GET(request: NextRequest) {
         totalPendente,
         faturasEmitidas,
         ticketMedio,
-        faturasVencidas: allReceitas.filter(r => r.status === 'VENCIDA').length
+        faturasVencidas
       }
     })
   } catch (error) {
@@ -127,9 +141,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get tenant ID from database
+    const tenant = await prisma.tenant.findFirst({
+      orderBy: { createdAt: 'asc' }
+    })
+    
+    if (!tenant) {
+      return NextResponse.json(
+        { error: 'Tenant não encontrado' },
+        { status: 404 }
+      )
+    }
+
     // Generate invoice number
     const lastReceita = await prisma.receita.findFirst({
-      where: { tenantId: 'tenant-default' },
+      where: { tenantId: tenant.id },
       orderBy: { createdAt: 'desc' }
     })
     
@@ -148,7 +174,7 @@ export async function POST(request: NextRequest) {
     // Create new invoice
     const newReceita = await prisma.receita.create({
       data: {
-        tenantId: 'tenant-default', // TODO: session.user.tenantId when multi-tenant is active
+        tenantId: tenant.id,
         numero,
         customerId: data.customerId,
         customerName: data.customerName,

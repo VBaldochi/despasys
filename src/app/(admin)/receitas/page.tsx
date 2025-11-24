@@ -129,11 +129,17 @@ export default function ReceitasPage() {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       PAGA: { color: 'bg-green-100 text-green-800', text: 'Paga', icon: CheckIcon },
+      PAGO: { color: 'bg-green-100 text-green-800', text: 'Paga', icon: CheckIcon },
       PENDENTE: { color: 'bg-yellow-100 text-yellow-800', text: 'Pendente', icon: ClockIcon },
-      VENCIDA: { color: 'bg-red-100 text-red-800', text: 'Vencida', icon: ClockIcon }
+      VENCIDA: { color: 'bg-red-100 text-red-800', text: 'Vencida', icon: ClockIcon },
+      VENCIDO: { color: 'bg-red-100 text-red-800', text: 'Vencida', icon: ClockIcon }
     }
     
-    const config = statusConfig[status as keyof typeof statusConfig]
+    const config = statusConfig[status as keyof typeof statusConfig] || {
+      color: 'bg-gray-100 text-gray-800',
+      text: status || 'Desconhecido',
+      icon: ClockIcon
+    }
     const Icon = config.icon
     
     return (

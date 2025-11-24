@@ -7,11 +7,16 @@ interface ProcessosState {
   loading: boolean
   error: string | null
   lastUpdated: Date | null
-  
+
   // Actions
   fetchProcessos: () => Promise<void>
   refreshProcessos: () => Promise<void>
   clearError: () => void
+
+  // Real-time actions
+  addProcesso: (processo: Process) => void
+  updateProcesso: (processo: Process) => void
+  removeProcesso: (id: string) => void
 }
 
 export const useProcessosStore = create<ProcessosState>((set, get) => ({
@@ -26,9 +31,15 @@ export const useProcessosStore = create<ProcessosState>((set, get) => ({
     try {
       const response = await api.get('/api/mobile/processos')
       
-      if (response.data.success) {
+      if (response.data && Array.isArray(response.data.data)) {
         set({ 
           processos: response.data.data,
+          loading: false,
+          lastUpdated: new Date()
+        })
+      } else if (Array.isArray(response.data)) {
+        set({
+          processos: response.data,
           loading: false,
           lastUpdated: new Date()
         })
@@ -53,9 +64,16 @@ export const useProcessosStore = create<ProcessosState>((set, get) => ({
     try {
       const response = await api.get('/api/mobile/processos')
       
-      if (response.data.success) {
+      if (response.data && Array.isArray(response.data.data)) {
         set({ 
           processos: response.data.data,
+          loading: false,
+          lastUpdated: new Date(),
+          error: null
+        })
+      } else if (Array.isArray(response.data)) {
+        set({
+          processos: response.data,
           loading: false,
           lastUpdated: new Date(),
           error: null
@@ -71,5 +89,15 @@ export const useProcessosStore = create<ProcessosState>((set, get) => ({
     }
   },
 
-  clearError: () => set({ error: null })
+  clearError: () => set({ error: null }),
+
+  addProcesso: (processo) => set(state => ({
+    processos: [processo, ...state.processos.filter(p => p.id !== processo.id)]
+  })),
+  updateProcesso: (processo) => set(state => ({
+    processos: state.processos.map(p => p.id === processo.id ? processo : p)
+  })),
+  removeProcesso: (id) => set(state => ({
+    processos: state.processos.filter(p => p.id !== id)
+  })),
 }))

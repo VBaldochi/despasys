@@ -26,9 +26,15 @@ export const useClientesStore = create<ClientesState>((set, get) => ({
     try {
       const response = await api.get('/api/mobile/clientes')
       
-      if (response.data.success) {
+      if (response.data && Array.isArray(response.data.data)) {
         set({ 
           clientes: response.data.data,
+          loading: false,
+          lastUpdated: new Date()
+        })
+      } else if (Array.isArray(response.data)) {
+        set({
+          clientes: response.data,
           loading: false,
           lastUpdated: new Date()
         })
@@ -53,9 +59,16 @@ export const useClientesStore = create<ClientesState>((set, get) => ({
     try {
       const response = await api.get('/api/mobile/clientes')
       
-      if (response.data.success) {
+      if (response.data && Array.isArray(response.data.data)) {
         set({ 
           clientes: response.data.data,
+          loading: false,
+          lastUpdated: new Date(),
+          error: null
+        })
+      } else if (Array.isArray(response.data)) {
+        set({
+          clientes: response.data,
           loading: false,
           lastUpdated: new Date(),
           error: null

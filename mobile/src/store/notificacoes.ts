@@ -36,9 +36,15 @@ export const useNotificacoesStore = create<NotificacoesState>((set, get) => ({
     try {
       const response = await api.get('/api/mobile/notificacoes')
       
-      if (response.data.success) {
+      if (response.data && Array.isArray(response.data.data)) {
         set({ 
           notificacoes: response.data.data,
+          loading: false,
+          lastUpdated: new Date()
+        })
+      } else if (Array.isArray(response.data)) {
+        set({
+          notificacoes: response.data,
           loading: false,
           lastUpdated: new Date()
         })
@@ -63,9 +69,16 @@ export const useNotificacoesStore = create<NotificacoesState>((set, get) => ({
     try {
       const response = await api.get('/api/mobile/notificacoes')
       
-      if (response.data.success) {
+      if (response.data && Array.isArray(response.data.data)) {
         set({ 
           notificacoes: response.data.data,
+          loading: false,
+          lastUpdated: new Date(),
+          error: null
+        })
+      } else if (Array.isArray(response.data)) {
+        set({
+          notificacoes: response.data,
           loading: false,
           lastUpdated: new Date(),
           error: null

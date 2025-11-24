@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -11,63 +11,35 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useProcessosStore } from '@/src/store/processos';
 
 type StatusVeiculo = 'EM_ANDAMENTO' | 'PRONTO' | 'PENDENTE_DOCS' | 'AGUARDANDO_PAGTO';
 
-interface Veiculo {
-  id: string;
-  placa: string;
-  cliente: string;
-  servico: string;
-  status: StatusVeiculo;
-  prazo: string;
-  valor: number;
-  documentos: string[];
-  telefone: string;
-}
-
-// Mock data
-const mockVeiculos: Veiculo[] = [
-  {
-    id: '1',
-    placa: 'ABC-1234',
-    cliente: 'João Silva',
-    servico: 'Licenciamento 2025',
-    status: 'EM_ANDAMENTO',
-    prazo: '2025-01-15',
-    valor: 450,
-    documentos: ['CRLV', 'CPF', 'Comprovante'],
-    telefone: '(11) 99999-9999'
-  },
-  {
-    id: '2', 
-    placa: 'XYZ-5678',
-    cliente: 'Maria Santos',
-    servico: 'Transferência',
-    status: 'PRONTO',
-    prazo: '2025-01-10',
-    valor: 280,
-    documentos: ['CRLV', 'ATPV', 'CPF', 'RG'],
-    telefone: '(11) 88888-8888'
-  },
-  {
-    id: '3',
-    placa: 'DEF-9012', 
-    cliente: 'Carlos Lima',
-    servico: '2ª Via CRLV',
-    status: 'PENDENTE_DOCS',
-    prazo: '2025-01-20',
-    valor: 95,
-    documentos: ['CPF', 'RG'],
-    telefone: '(11) 77777-7777'
+// Mapeamento de status do backend para status da UI
+const mapStatus = (status: string): StatusVeiculo => {
+  switch (status) {
+    case 'EM_ANDAMENTO':
+      return 'EM_ANDAMENTO';
+    case 'CONCLUIDO':
+      return 'PRONTO';
+    case 'AGUARDANDO_DOCUMENTOS':
+      return 'PENDENTE_DOCS';
+    case 'AGUARDANDO_PAGAMENTO':
+      return 'AGUARDANDO_PAGTO';
+    default:
+      return 'EM_ANDAMENTO';
   }
-];
+};
 
 export default function VeiculosScreen() {
-  const [veiculos, setVeiculos] = useState<Veiculo[]>(mockVeiculos);
+  const { processos, loading, fetchProcessos, refreshProcessos } = useProcessosStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<StatusVeiculo | 'TODOS'>('TODOS');
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchProcessos();
+  }, []);
 
   const statusConfig = {
     'EM_ANDAMENTO': { color: '#007AFF', bg: '#E3F2FD', icon: 'hourglass-empty', label: 'Em Andamento' },
@@ -75,6 +47,34 @@ export default function VeiculosScreen() {
     'PENDENTE_DOCS': { color: '#FF9500', bg: '#FFF3E0', icon: 'warning', label: 'Pendente' },
     'AGUARDANDO_PAGTO': { color: '#FF3B30', bg: '#FFEBEE', icon: 'payment', label: 'Pagamento' }
   };
+
+  // Transforma processos do backend em "veículos" para a UI
+  // Debug: log processos recebidos
+  useEffect(() => {
+    console.log('Processos recebidos:', processos);
+  }, [processos]);
+
+  // Só considera processos com veiculoId válido
+  const veiculos = useMemo(() => {
+    const veics = processos.filter(proc => proc.veiculoId && typeof proc.veiculoId === 'string' && proc.veiculoId.trim() !== '').map(proc => {
+      const placa = proc.placa || proc.titulo || proc.numero || 'Sem placa';
+      const cliente = proc.cliente || (proc.customer && proc.customer.name) || 'Sem cliente';
+      const status = mapStatus(proc.status);
+      return {
+        id: proc.id,
+        placa,
+        cliente,
+        servico: proc.servico || proc.tipoServico || 'Serviço não informado',
+        status,
+        prazo: proc.prazo || proc.prazoLegal ? new Date(proc.prazo || proc.prazoLegal).toISOString() : '',
+        valor: typeof proc.valor === 'number' ? proc.valor : (typeof proc.valorTotal === 'number' ? proc.valorTotal : 0),
+        documentos: [],
+        telefone: proc.telefone || proc.customer?.phone || ''
+      };
+    });
+    console.log('Veículos filtrados:', veics.length, veics);
+    return veics;
+  }, [processos]);
 
   const filteredVeiculos = veiculos.filter(veiculo => {
     const matchesSearch = veiculo.placa.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -85,7 +85,7 @@ export default function VeiculosScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await refreshProcessos();
     setRefreshing(false);
   };
 
@@ -156,74 +156,27 @@ export default function VeiculosScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {filteredVeiculos.map(veiculo => {
-          const statusInfo = statusConfig[veiculo.status];
-          
-          return (
-            <View key={veiculo.id} style={styles.veiculoCard}>
-              {/* Header do Card */}
-              <View style={styles.cardHeader}>
-                <View style={styles.placaContainer}>
-                  <MaterialIcons name="directions-car" size={20} color="#007AFF" />
-                  <Text style={styles.placa}>{veiculo.placa}</Text>
-                </View>
-                
-                <View style={[styles.statusBadge, { backgroundColor: statusInfo.bg }]}>
-                  <MaterialIcons name={statusInfo.icon as any} size={14} color={statusInfo.color} />
-                  <Text style={[styles.statusText, { color: statusInfo.color }]}>
-                    {statusInfo.label}
-                  </Text>
-                </View>
+        {loading ? (
+          // Skeletons de loading
+          Array.from({ length: 10 }).map((_, idx) => (
+            <View key={idx} style={{
+              backgroundColor: '#f0f0f0',
+              borderRadius: 16,
+              height: 32,
+              marginBottom: 16,
+              opacity: 0.7
+            }} />
+          ))
+        ) : filteredVeiculos.length > 0 ? (
+          filteredVeiculos.map(veiculo => {
+            const statusInfo = statusConfig[veiculo.status];
+            return (
+              <View key={veiculo.id} style={styles.veiculoCard}>
+                {/* ...existing code... */}
               </View>
-
-              {/* Informações do Cliente */}
-              <View style={styles.clienteInfo}>
-                <MaterialIcons name="person" size={16} color="#666" />
-                <Text style={styles.clienteName}>{veiculo.cliente}</Text>
-                <TouchableOpacity 
-                  style={styles.phoneButton}
-                  onPress={() => handleCall(veiculo.telefone, veiculo.cliente)}
-                >
-                  <MaterialIcons name="phone" size={16} color="#007AFF" />
-                </TouchableOpacity>
-              </View>
-
-              {/* Serviço */}
-              <View style={styles.servicoInfo}>
-                <MaterialIcons name="build" size={16} color="#666" />
-                <Text style={styles.servicoText}>{veiculo.servico}</Text>
-              </View>
-
-              {/* Prazo e Valor */}
-              <View style={styles.bottomInfo}>
-                <View style={styles.prazoContainer}>
-                  <MaterialIcons name="schedule" size={16} color="#666" />
-                  <Text style={styles.prazoText}>Prazo: {new Date(veiculo.prazo).toLocaleDateString('pt-BR')}</Text>
-                </View>
-                
-                <View style={styles.valorContainer}>
-                  <Text style={styles.valorText}>
-                    R$ {veiculo.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Documentos */}
-              <View style={styles.documentosContainer}>
-                <Text style={styles.documentosLabel}>Documentos:</Text>
-                <View style={styles.documentosChips}>
-                  {veiculo.documentos.map(doc => (
-                    <View key={doc} style={styles.docChip}>
-                      <Text style={styles.docText}>{doc}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            </View>
-          );
-        })}
-
-        {filteredVeiculos.length === 0 && (
+            );
+          })
+        ) : (
           <View style={styles.emptyState}>
             <MaterialIcons name="search-off" size={48} color="#ccc" />
             <Text style={styles.emptyText}>Nenhum veículo encontrado</Text>
@@ -233,6 +186,32 @@ export default function VeiculosScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Botão flutuante para novo veículo */}
+      <TouchableOpacity
+        style={{
+          position: 'absolute',
+          right: 20,
+          bottom: 24,
+          backgroundColor: '#4f7cff',
+          borderRadius: 28,
+          padding: 16,
+          elevation: 4,
+          flexDirection: 'row',
+          alignItems: 'center',
+        }}
+        onPress={() => {
+          // Navegar para tela de novo veículo
+          // Se usar expo-router:
+          // router.push('/novo-veiculo')
+          // Se não, adapte para sua navegação
+          if (typeof router !== 'undefined') router.push('/novo-veiculo');
+        }}
+        activeOpacity={0.88}
+      >
+        <MaterialIcons name="add" size={24} color="#fff" />
+        <Text style={{ color: '#fff', fontWeight: 'bold', marginLeft: 8, fontSize: 16 }}>Novo Veículo</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }

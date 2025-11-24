@@ -3,22 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
 
 // Função para detectar URL de desenvolvimento correta
-const getDevBaseURL = () => {
-  try {
-    if (__DEV__) {
-      // IP da máquina host para dispositivos físicos (Expo Go)
-      return 'http://192.168.100.72:3001'
-      
-      // OUTRAS OPÇÕES COMENTADAS:
-      // return 'http://localhost:3001'     // iOS Simulator
-      // return 'http://10.0.2.2:3001'     // Android Emulator
-    }
-    return 'https://despasys.vercel.app'
-  } catch (error) {
-    console.warn('Platform detection failed, using IP:', error)
-    return __DEV__ ? 'http://192.168.100.72:3001' : 'https://despasys.vercel.app'
-  }
-}
+const getDevBaseURL = () => 'http://192.168.100.72:3001'
 
 // Configuração da API
 const API_CONFIG = {

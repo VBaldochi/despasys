@@ -11,14 +11,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    // Fetch registrations using Prisma
+    // Filtra pelo tenantId do usuário logado
+    const tenantId = (session.user as any)?.tenantId || 'tenant-default';
     const registrations = await prisma.registration.findMany({
       where: {
-        tenantId: 'tenant-default' // TODO: session.user.tenantId when multi-tenant is active
+        tenantId
       },
       orderBy: { requestedDate: 'desc' }
     });
-
     return NextResponse.json(registrations);
   } catch (error) {
     console.error('Erro ao buscar registros:', error);
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     // Create registration
     const registration = await prisma.registration.create({
       data: {
-        tenantId: 'tenant-default', // TODO: session.user.tenantId when multi-tenant is active
+        tenantId,
         customerId: customerId || null,
         customerName,
         customerCpf,

@@ -233,22 +233,33 @@ export default function LicensingPage() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
+      PENDING: { color: 'bg-blue-100 text-blue-800', text: 'Pendente', icon: ClockIcon },
+      DOCS_SENT: { color: 'bg-blue-100 text-blue-800', text: 'Docs Enviados', icon: ClockIcon },
+      PROCESSING: { color: 'bg-yellow-100 text-yellow-800', text: 'Processando', icon: ClockIcon },
+      COMPLETED: { color: 'bg-green-100 text-green-800', text: 'Concluído', icon: CheckIcon },
+      OVERDUE: { color: 'bg-red-100 text-red-800', text: 'Vencido', icon: ExclamationTriangleIcon },
+      CANCELLED: { color: 'bg-gray-200 text-gray-600', text: 'Cancelado', icon: XMarkIcon },
       SOLICITADO: { color: 'bg-blue-100 text-blue-800', text: 'Solicitado', icon: ClockIcon },
       EM_PROCESSAMENTO: { color: 'bg-yellow-100 text-yellow-800', text: 'Processando', icon: ClockIcon },
       AGUARDANDO_PAGAMENTO: { color: 'bg-orange-100 text-orange-800', text: 'Aguardando Pgto', icon: BanknotesIcon },
       CONCLUIDO: { color: 'bg-green-100 text-green-800', text: 'Concluído', icon: CheckIcon },
       VENCIDO: { color: 'bg-red-100 text-red-800', text: 'Vencido', icon: ExclamationTriangleIcon }
+    };
+    const config = statusConfig[status as keyof typeof statusConfig];
+    if (!config) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">
+          {status || 'Desconhecido'}
+        </span>
+      );
     }
-    
-    const config = statusConfig[status as keyof typeof statusConfig]
-    const Icon = config.icon
-    
+    const Icon = config.icon;
     return (
       <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${config.color}`}>
         <Icon className="h-3 w-3" />
         {config.text}
       </span>
-    )
+    );
   }
 
   const getPriorityBadge = (priority: string) => {
@@ -276,7 +287,8 @@ export default function LicensingPage() {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR')
+    if (!dateString || isNaN(Date.parse(dateString))) return '-';
+    return new Date(dateString).toLocaleDateString('pt-BR');
   }
 
   const isNearExpiration = (expirationDate: string) => {
@@ -320,11 +332,11 @@ export default function LicensingPage() {
   // Estatísticas dos licenciamentos
   const stats = {
     total: licensings.length,
-    pending: licensings.filter(l => ['SOLICITADO', 'EM_PROCESSAMENTO', 'AGUARDANDO_PAGAMENTO'].includes(l.status)).length,
-    completed: licensings.filter(l => l.status === 'CONCLUIDO').length,
-    expired: licensings.filter(l => l.status === 'VENCIDO').length,
+    pending: licensings.filter(l => ['PENDING', 'PROCESSING', 'DOCS_SENT', 'SOLICITADO', 'EM_PROCESSAMENTO', 'AGUARDANDO_PAGAMENTO'].includes(l.status)).length,
+    completed: licensings.filter(l => ['COMPLETED', 'CONCLUIDO'].includes(l.status)).length,
+    expired: licensings.filter(l => ['OVERDUE', 'VENCIDO'].includes(l.status)).length,
     nearExpiration: licensings.filter(l => isNearExpiration(l.expirationDate)).length,
-    totalValue: licensings.reduce((sum, l) => sum + l.value, 0)
+    totalValue: licensings.reduce((sum, l) => sum + (typeof l.totalValue === 'number' ? l.totalValue : 0), 0)
   }
 
   return (
@@ -530,7 +542,7 @@ export default function LicensingPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Valor Total:</span>
                     <span className="text-lg font-bold text-green-600">
-                      {formatCurrency(licensing.value)}
+                      {formatCurrency(typeof licensing.totalValue === 'number' ? licensing.totalValue : 0)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">

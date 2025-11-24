@@ -22,33 +22,30 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
   fetchDashboard: async () => {
     set({ loading: true, error: null })
-    
     try {
       const response = await api.get('/api/mobile/dashboard')
-      
-      if (response.data) {
-        // Usar os dados retornados pela API mobile
+      if (response.data && response.data.estatisticas) {
+        const estat = response.data.estatisticas;
         const dashboardData: DashboardData = {
           processos: {
-            total: response.data.totalProcessos || 0,
-            pendentes: response.data.processosPendentes || 0,
-            emAndamento: response.data.processosAndamento || 0,
-            concluidos: response.data.processosConcluidos || 0,
-            vencidos: response.data.processosVencidos || 0
+            total: estat.totalProcessos || 0,
+            pendentes: estat.processosPendentes || 0,
+            emAndamento: estat.processosAndamento || 0,
+            concluidos: estat.processosFinalizados || 0,
+            vencidos: estat.processosVencidos || 0
           },
           financeiro: {
-            receitasMes: response.data.receitasMes || 0,
-            despesasMes: response.data.despesasMes || 0,
-            saldoAtual: response.data.saldoAtual || 0,
-            contasPendentes: response.data.contasPendentes || 0
+            receitasMes: estat.receitaRecebida?.valor || 0,
+            despesasMes: estat.despesasMes || 0,
+            saldoAtual: estat.saldoAtual || 0,
+            contasPendentes: estat.debitosPendentes?.quantidade || 0
           },
           clientes: {
-            total: response.data.totalClientes || 0,
-            novosEsteMes: response.data.novosClientesMes || 0
+            total: estat.totalClientes || 0,
+            novosEsteMes: estat.novosClientesMes || 0
           },
           proximosVencimentos: response.data.proximosVencimentos || []
         }
-        
         set({ 
           data: dashboardData, 
           loading: false,
@@ -75,30 +72,28 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     
     try {
       const response = await api.get('/api/mobile/dashboard')
-      
-      if (response.data) {
-        // Usar os dados retornados pela API mobile
+      if (response.data && response.data.estatisticas) {
+        const estat = response.data.estatisticas;
         const dashboardData: DashboardData = {
           processos: {
-            total: response.data.totalProcessos || 0,
-            pendentes: response.data.processosPendentes || 0,
-            emAndamento: response.data.processosAndamento || 0,
-            concluidos: response.data.processosConcluidos || 0,
-            vencidos: response.data.processosVencidos || 0
+            total: estat.totalProcessos || 0,
+            pendentes: estat.processosPendentes || 0,
+            emAndamento: estat.processosAndamento || 0,
+            concluidos: estat.processosFinalizados || 0,
+            vencidos: estat.processosVencidos || 0
           },
           financeiro: {
-            receitasMes: response.data.receitasMes || 0,
-            despesasMes: response.data.despesasMes || 0,
-            saldoAtual: response.data.saldoAtual || 0,
-            contasPendentes: response.data.contasPendentes || 0
+            receitasMes: estat.receitaRecebida?.valor || 0,
+            despesasMes: estat.despesasMes || 0,
+            saldoAtual: estat.saldoAtual || 0,
+            contasPendentes: estat.debitosPendentes?.quantidade || 0
           },
           clientes: {
-            total: response.data.totalClientes || 0,
-            novosEsteMes: response.data.novosClientesMes || 0
+            total: estat.totalClientes || 0,
+            novosEsteMes: estat.novosClientesMes || 0
           },
           proximosVencimentos: response.data.proximosVencimentos || []
         }
-        
         set({ 
           data: dashboardData, 
           loading: false,

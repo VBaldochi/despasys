@@ -122,6 +122,23 @@ colors: {
 - ✅ `GET /api/mobile/financeiro/dashboard` - Dashboard financeiro
 - ✅ `GET /api/mobile/financeiro/transacoes` - Transações
 
+---
+
+## Integração Mobile + Backend Web (2025)
+
+- O app mobile agora consome diretamente o backend web oficial, usando as rotas `/api/mobile/*`.
+- Todos os headers de autenticação (Authorization, X-Tenant-Id, X-User-Id, X-Tenant-Domain) são enviados automaticamente pelo serviço de API.
+- Os stores foram ajustados para aceitar respostas tanto no formato `{ data: [...] }` quanto `{ success: true, data: [...] }`, garantindo compatibilidade total.
+- O login mobile utiliza o mesmo fluxo e validação do web, mantendo sessão e permissões sincronizadas.
+- Qualquer endpoint novo ou alterado no backend web estará disponível para o mobile sem necessidade de duplicação de lógica.
+- Para endpoints customizados, basta seguir o padrão de headers e resposta já adotado.
+
+**Resumo:**
+- Backend único para web e mobile = menos manutenção, dados sempre sincronizados e experiência consistente.
+- Se algum endpoint mudar, basta ajustar o store correspondente no mobile para refletir a nova estrutura de resposta.
+
+---
+
 ## 🛠️ Estrutura Técnica
 
 ### Stores (Zustand)

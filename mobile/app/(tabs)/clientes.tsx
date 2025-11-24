@@ -34,10 +34,10 @@ export default function ClientesScreen() {
 
   const filteredClientes = clientes.filter(
     (cliente) =>
-      cliente.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cliente.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cliente.cpfCnpj?.includes(searchQuery) ||
-      cliente.phone?.includes(searchQuery)
+      (cliente.name ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (cliente.email ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (cliente.cpfCnpj ?? '').includes(searchQuery) ||
+      (cliente.phone ?? '').includes(searchQuery)
   )
 
   const onRefresh = async () => {
@@ -72,119 +72,68 @@ export default function ClientesScreen() {
     return phone
   }
 
-  const getInitials = (name: string) => {
+  const getInitials = (name?: string) => {
+    if (!name) return '';
     return name
       .split(' ')
       .map(word => word[0])
       .join('')
       .substring(0, 2)
-      .toUpperCase()
+      .toUpperCase();
   }
 
   const renderCliente = ({ item }: { item: Customer }) => {
     return (
       <TouchableOpacity
-        onPress={() => Alert.alert('Cliente', `Detalhes do cliente ${item.name}`)}
-        style={styles.clienteCard}
+        onPress={() => router.push({ pathname: '/cliente-detalhe', params: { cliente: JSON.stringify(item) } })}
+        style={[styles.clienteCard, { marginBottom: 16 }]}
+        activeOpacity={0.88}
       >
-        <Card style={styles.card}>
-          <Card.Content>
-            <View style={styles.cardHeader}>
-              <View style={styles.clienteInfo}>
-                <Avatar.Text
-                  size={48}
-                  label={getInitials(item.name)}
-                  style={styles.avatar}
+        <Card style={[styles.card, { borderRadius: 16, elevation: 3, backgroundColor: '#fff' }]}> 
+          <Card.Content style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8 }}>
+            <Avatar.Text
+              size={54}
+              label={getInitials(item.name)}
+              style={[styles.avatar, { marginRight: 16, backgroundColor: colors.primary[500] }]}
+            />
+            <View style={{ flex: 1 }}>
+              <Text variant="titleMedium" style={[styles.clienteNome, { fontSize: 17, marginBottom: 2 }]}>
+                {item.name}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                <MaterialCommunityIcons
+                  name={item.tipoCliente === 'FISICO' ? 'account' : 'domain'}
+                  size={15}
+                  color={colors.gray[600]}
                 />
-                <View style={styles.clienteDetails}>
-                  <Text variant="titleMedium" style={styles.clienteNome}>
-                    {item.name}
-                  </Text>
-                  <View style={styles.clienteMetadata}>
-                    <MaterialCommunityIcons
-                      name={item.tipoCliente === 'FISICO' ? 'account' : 'domain'}
-                      size={16}
-                      color={colors.gray[600]}
-                    />
-                    <Text variant="bodyMedium" style={styles.tipoCliente}>
-                      {item.tipoCliente === 'FISICO' ? 'Pessoa Física' : 'Pessoa Jurídica'}
-                    </Text>
-                  </View>
-                </View>
+                <Text variant="bodyMedium" style={[styles.tipoCliente, { fontSize: 13, marginLeft: 4 }]}>
+                  {item.tipoCliente === 'FISICO' ? 'Pessoa Física' : 'Pessoa Jurídica'}
+                </Text>
               </View>
-              <Chip
-                mode="outlined"
-                compact
-                style={[
-                  styles.statusChip,
-                  {
-                    borderColor: item.status === 'ATIVO' ? colors.success : colors.gray[400],
-                    backgroundColor: item.status === 'ATIVO' ? colors.success + '20' : colors.gray[100]
-                  }
-                ]}
-                textStyle={{
-                  color: item.status === 'ATIVO' ? colors.success : colors.gray[600],
-                  fontSize: 12
-                }}
-              >
-                {item.status}
-              </Chip>
-            </View>
-
-            <View style={styles.contactInfo}>
-              {item.email && (
-                <View style={styles.contactItem}>
-                  <MaterialCommunityIcons
-                    name="email"
-                    size={16}
-                    color={colors.gray[600]}
-                  />
-                  <Text variant="bodyMedium" style={styles.contactText}>
-                    {item.email}
-                  </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                <MaterialCommunityIcons name="email" size={15} color={colors.gray[600]} style={{ marginRight: 4 }} />
+                <Text style={{ color: colors.gray[700], fontSize: 13 }}>{item.email || 'N/A'}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                <MaterialCommunityIcons name="phone" size={15} color={colors.gray[600]} style={{ marginRight: 4 }} />
+                <Text style={{ color: colors.gray[700], fontSize: 13 }}>{formatPhone(item.phone)}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                <MaterialCommunityIcons name={item.tipoCliente === 'FISICO' ? 'card-account-details' : 'domain'} size={15} color={colors.gray[600]} style={{ marginRight: 4 }} />
+                <Text style={{ color: colors.gray[700], fontSize: 13 }}>{formatCpfCnpj(item.cpfCnpj)}</Text>
+              </View>
+              {(item.cidade || item.estado) && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                  <MaterialCommunityIcons name="map-marker" size={15} color={colors.gray[600]} style={{ marginRight: 4 }} />
+                  <Text style={{ color: colors.gray[600], fontSize: 13 }}>{[item.cidade, item.estado].filter(Boolean).join(' - ')}</Text>
                 </View>
               )}
-
-              <View style={styles.contactItem}>
-                <MaterialCommunityIcons
-                  name="phone"
-                  size={16}
-                  color={colors.gray[600]}
-                />
-                <Text variant="bodyMedium" style={styles.contactText}>
-                  {formatPhone(item.phone)}
-                </Text>
-              </View>
-
-              <View style={styles.contactItem}>
-                <MaterialCommunityIcons
-                  name={item.tipoCliente === 'FISICO' ? 'card-account-details' : 'domain'}
-                  size={16}
-                  color={colors.gray[600]}
-                />
-                <Text variant="bodyMedium" style={styles.contactText}>
-                  {formatCpfCnpj(item.cpfCnpj)}
-                </Text>
-              </View>
             </View>
-
-            {(item.cidade || item.estado) && (
-              <View style={styles.addressInfo}>
-                <MaterialCommunityIcons
-                  name="map-marker"
-                  size={16}
-                  color={colors.gray[600]}
-                />
-                <Text variant="bodyMedium" style={styles.addressText}>
-                  {[item.cidade, item.estado].filter(Boolean).join(' - ')}
-                </Text>
-              </View>
-            )}
           </Card.Content>
         </Card>
       </TouchableOpacity>
-    )
-  }
+    );
+  };
 
   if (loading) {
     return (
@@ -223,7 +172,7 @@ export default function ClientesScreen() {
       <FAB
         icon="plus"
         style={styles.fab}
-        onPress={() => Alert.alert('Novo Cliente', 'Funcionalidade em desenvolvimento')}
+        onPress={() => router.push('/novo-cliente')}
         label="Novo Cliente"
       />
     </SafeAreaView>

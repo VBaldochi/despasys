@@ -213,20 +213,50 @@ export default function TransfersPage() {
       EM_PROCESSAMENTO: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Em Processamento' },
       AGUARDANDO_PAGAMENTO: { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Aguardando Pagamento' },
       CONCLUIDO: { bg: 'bg-green-100', text: 'text-green-800', label: 'Concluído' },
-      CANCELADO: { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelado' }
+      CANCELADO: { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelado' },
+      // Backend enums
+      PENDING_DOCS: { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Docs Pendentes' },
+      WAITING_PAYMENT: { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Aguardando Pagamento' },
+      PAYMENT_CONFIRMED: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Pagamento Confirmado' },
+      DETRAN_PROCESSING: { bg: 'bg-purple-100', text: 'text-purple-800', label: 'Processando DETRAN' },
+      COMPLETED: { bg: 'bg-green-100', text: 'text-green-800', label: 'Concluído' }
+    };
+    const config = statusConfig[status as keyof typeof statusConfig];
+    if (!config) {
+      // Status desconhecido: fallback visual
+      return (
+        <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
+          {status}
+        </span>
+      );
     }
-    const config = statusConfig[status as keyof typeof statusConfig]
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
         {config.label}
       </span>
-    )
+    );
   }
 
   const totalTransfers = transfers.length
-  const pendingTransfers = transfers.filter(t => t.status === 'SOLICITADO' || t.status === 'EM_PROCESSAMENTO').length
-  const completedTransfers = transfers.filter(t => t.status === 'CONCLUIDO').length
-  const totalRevenue = transfers.filter(t => t.status === 'CONCLUIDO').reduce((sum, t) => sum + t.value, 0)
+  // Considera todos os enums possíveis do backend e frontend
+  const pendingStatuses = [
+    'SOLICITADO', 'EM_PROCESSAMENTO', 'PENDING_DOCS', 'WAITING_PAYMENT', 'PAYMENT_CONFIRMED', 'DETRAN_PROCESSING'
+  ];
+  const completedStatuses = ['CONCLUIDO', 'COMPLETED'];
+  const pendingTransfers = transfers.filter(t => pendingStatuses.includes(t.status)).length;
+  const completedTransfers = transfers.filter(t => completedStatuses.includes(t.status)).length;
+  const totalRevenue = transfers
+    .filter(t => completedStatuses.includes(t.status))
+    .reduce((sum, t) => {
+      // Receita: soma transferValue das concluídas
+      if (typeof t.transferValue === 'number' && t.transferValue > 0) {
+        return sum + t.transferValue;
+      }
+      return sum;
+    }, 0);
+    function formatCurrencyBRL(value: number) {
+      return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
 
   if (loading) {
     return (
@@ -319,7 +349,7 @@ export default function TransfersPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Receita</p>
-                <p className="text-2xl font-bold text-blue-600">R$ {totalRevenue.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-blue-600">{formatCurrencyBRL(totalRevenue)}</p>
               </div>
               <BanknotesIcon className="h-12 w-12 text-blue-600 opacity-50" />
             </div>
@@ -367,18 +397,17 @@ export default function TransfersPage() {
 
         {/* Table */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+          <div className="overflow-x-auto md:overflow-x-visible">
+            <table className="w-full divide-y divide-gray-200 text-xs md:text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wide">ID</th>
-                  <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wide">Veículo</th>
-                  <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wide">Vendedor</th>
-                  <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wide">Comprador</th>
-                  <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wide">Data</th>
-                  <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wide">Status</th>
-                  <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wide">Valor</th>
-                  <th className="px-8 py-5 text-left text-sm font-bold text-gray-700 uppercase tracking-wide">Ações</th>
+                  <th className="px-1 py-2 text-left font-bold text-gray-700 uppercase tracking-wide">Veículo</th>
+                  <th className="px-1 py-2 text-left font-bold text-gray-700 uppercase tracking-wide">Vendedor</th>
+                  <th className="px-1 py-2 text-left font-bold text-gray-700 uppercase tracking-wide">Comprador</th>
+                  <th className="px-1 py-2 text-left font-bold text-gray-700 uppercase tracking-wide">Data</th>
+                  <th className="px-1 py-2 text-left font-bold text-gray-700 uppercase tracking-wide">Status</th>
+                  <th className="px-1 py-2 text-left font-bold text-gray-700 uppercase tracking-wide">Valor</th>
+                  <th className="px-1 py-2 text-left font-bold text-gray-700 uppercase tracking-wide">Ações</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -389,7 +418,6 @@ export default function TransfersPage() {
                     animate={{ opacity: 1 }}
                     className="hover:bg-gray-50"
                   >
-                    <td className="px-8 py-6 whitespace-nowrap text-base font-semibold text-gray-900">#{transfer.id}</td>
                     <td className="px-8 py-6 whitespace-nowrap">
                       <div className="text-base font-bold text-gray-900">{transfer.vehiclePlate}</div>
                       <div className="text-base text-gray-600">{transfer.vehicleBrand} {transfer.vehicleModel}</div>
@@ -403,7 +431,9 @@ export default function TransfersPage() {
                       <div className="text-sm text-gray-600">{transfer.buyerPhone}</div>
                     </td>
                     <td className="px-8 py-6 whitespace-nowrap text-base font-medium text-gray-900">
-                      {new Date(transfer.transferDate).toLocaleDateString('pt-BR')}
+                      {transfer.requestedDate && !isNaN(Date.parse(transfer.requestedDate))
+                        ? new Date(transfer.requestedDate).toLocaleDateString('pt-BR')
+                        : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(transfer.status)}
@@ -412,7 +442,13 @@ export default function TransfersPage() {
                       )}
                     </td>
                     <td className="px-8 py-6 whitespace-nowrap text-base font-bold text-green-600">
-                      R$ {transfer.value.toFixed(2)}
+                      {(() => {
+                        // Usar transferValue (valor da transferência) e serviceValue (taxa de serviço) do backend
+                        const valor = (typeof transfer.transferValue === 'number' && transfer.transferValue > 0)
+                          ? transfer.transferValue
+                          : (typeof transfer.serviceValue === 'number' && transfer.serviceValue > 0 ? transfer.serviceValue : 0);
+                        return `R$ ${valor.toFixed(2)}`;
+                      })()}
                     </td>
                     <td className="px-8 py-6 whitespace-nowrap">
                       <button
@@ -483,10 +519,10 @@ export default function TransfersPage() {
 
                   <div className="border-t pt-4">
                     <h3 className="font-semibold mb-2">Valores</h3>
-                    <p className="text-sm"><strong>Valor de Venda:</strong> R$ {selectedTransfer.saleValue.toFixed(2)}</p>
-                    <p className="text-sm"><strong>Taxa DETRAN:</strong> R$ {selectedTransfer.fees.detran.toFixed(2)}</p>
-                    <p className="text-sm"><strong>Taxa de Serviço:</strong> R$ {selectedTransfer.fees.service.toFixed(2)}</p>
-                    <p className="text-sm font-bold"><strong>Total:</strong> R$ {selectedTransfer.fees.total.toFixed(2)}</p>
+                    <p className="text-sm"><strong>Valor de Venda:</strong> R$ {(selectedTransfer.saleValue ?? 0).toFixed(2)}</p>
+                    <p className="text-sm"><strong>Taxa DETRAN:</strong> R$ {(selectedTransfer.fees?.detran ?? 0).toFixed(2)}</p>
+                    <p className="text-sm"><strong>Taxa de Serviço:</strong> R$ {(selectedTransfer.fees?.service ?? 0).toFixed(2)}</p>
+                    <p className="text-sm font-bold"><strong>Total:</strong> R$ {(selectedTransfer.fees?.total ?? 0).toFixed(2)}</p>
                   </div>
 
                   {selectedTransfer.notes && (

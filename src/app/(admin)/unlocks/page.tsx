@@ -198,22 +198,35 @@ export default function UnlocksPage() {
     fetchUnlocks()
   }, [])
 
+  const normalizeUnlock = (unlock: any): Unlock => {
+    // Garante que fees e documents existem e têm estrutura esperada
+    return {
+      ...unlock,
+      fees: unlock.fees ?? {
+        detran: unlock.unlockValue ?? 0,
+        service: unlock.serviceValue ?? 0,
+        total: unlock.totalValue ?? ((unlock.unlockValue ?? 0) + (unlock.serviceValue ?? 0))
+      },
+      documents: unlock.documents ?? { required: [], received: [] },
+    }
+  }
+
   const fetchUnlocks = async () => {
     setLoading(true)
     try {
       const response = await fetch('/api/unlocks')
       if (response.ok) {
         const data = await response.json()
-        setUnlocks(data)
-        setFilteredUnlocks(data)
+        // Normaliza todos os unlocks recebidos do backend
+        const normalized = Array.isArray(data) ? data.map(normalizeUnlock) : []
+        setUnlocks(normalized)
+        setFilteredUnlocks(normalized)
       } else {
-        // Fallback to mock data if API fails
         setUnlocks(mockUnlocks)
         setFilteredUnlocks(mockUnlocks)
       }
     } catch (error) {
       console.error('Error fetching unlocks:', error)
-      // Fallback to mock data
       setUnlocks(mockUnlocks)
       setFilteredUnlocks(mockUnlocks)
     } finally {
@@ -259,18 +272,32 @@ export default function UnlocksPage() {
       ANALISE_ORGAO: { color: 'bg-purple-100 text-purple-800', text: 'Análise Órgão', icon: ShieldExclamationIcon },
       EM_PROCESSAMENTO: { color: 'bg-yellow-100 text-yellow-800', text: 'Processando', icon: ClockIcon },
       CONCLUIDO: { color: 'bg-green-100 text-green-800', text: 'Concluído', icon: CheckIcon },
-      REJEITADO: { color: 'bg-red-100 text-red-800', text: 'Rejeitado', icon: XMarkIcon }
+      REJEITADO: { color: 'bg-red-100 text-red-800', text: 'Rejeitado', icon: XMarkIcon },
+      // Backend enums
+      ANALYSIS: { color: 'bg-blue-100 text-blue-800', text: 'Em Análise', icon: ClockIcon },
+      PENDING_DOCS: { color: 'bg-orange-100 text-orange-800', text: 'Docs Pendentes', icon: DocumentTextIcon },
+      PROCESSING: { color: 'bg-yellow-100 text-yellow-800', text: 'Processando', icon: ClockIcon },
+      DETRAN_PROCESSING: { color: 'bg-purple-100 text-purple-800', text: 'Processando DETRAN', icon: ShieldExclamationIcon },
+      COMPLETED: { color: 'bg-green-100 text-green-800', text: 'Concluído', icon: CheckIcon },
+      CANCELLED: { color: 'bg-red-100 text-red-800', text: 'Cancelado', icon: XMarkIcon }
+    };
+    const config = statusConfig[status as keyof typeof statusConfig];
+    if (!config) {
+      // Status desconhecido: fallback visual
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-700">
+          ?
+          {status}
+        </span>
+      );
     }
-    
-    const config = statusConfig[status as keyof typeof statusConfig]
-    const Icon = config.icon
-    
+    const Icon = config.icon;
     return (
       <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${config.color}`}>
         <Icon className="h-3 w-3" />
         {config.text}
       </span>
-    )
+    );
   }
 
   const getTypeBadge = (type: string) => {
@@ -280,16 +307,27 @@ export default function UnlocksPage() {
       MULTAS: { color: 'bg-orange-100 text-orange-800', text: 'Multas' },
       IPVA: { color: 'bg-purple-100 text-purple-800', text: 'IPVA' },
       FURTO_ROUBO: { color: 'bg-gray-100 text-gray-800', text: 'Furto/Roubo' },
-      OUTROS: { color: 'bg-green-100 text-green-800', text: 'Outros' }
+      OUTROS: { color: 'bg-green-100 text-green-800', text: 'Outros' },
+      // Backend enums
+      MULTA: { color: 'bg-orange-100 text-orange-800', text: 'Multa' },
+      ROUBO_FURTO: { color: 'bg-gray-100 text-gray-800', text: 'Roubo/Furto' },
+      RESTRICAO_AMBIENTAL: { color: 'bg-green-100 text-green-800', text: 'Restrição Ambiental' },
+      RESTRICAO_JUDICIAL: { color: 'bg-red-100 text-red-800', text: 'Restrição Judicial' }
+    };
+    const config = typeConfig[type as keyof typeof typeConfig];
+    if (!config) {
+      // Tipo desconhecido: fallback visual
+      return (
+        <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-700">
+          ? {type}
+        </span>
+      );
     }
-    
-    const config = typeConfig[type as keyof typeof typeConfig]
-    
     return (
       <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${config.color}`}>
         {config.text}
       </span>
-    )
+    );
   }
 
   const getPriorityBadge = (priority: string) => {
@@ -371,14 +409,23 @@ export default function UnlocksPage() {
   }
 
   // Estatísticas dos desbloqueios
+  // Considera todos os enums possíveis do backend e frontend
+  const pendingStatuses = [
+    'SOLICITADO', 'DOCUMENTOS_PENDENTES', 'ANALISE_ORGAO', 'EM_PROCESSAMENTO',
+    'ANALYSIS', 'PENDING_DOCS', 'PROCESSING', 'DETRAN_PROCESSING'
+  ];
+  const completedStatuses = ['CONCLUIDO', 'COMPLETED'];
+  const rejectedStatuses = ['REJEITADO', 'CANCELLED'];
+  const docsNeededStatuses = ['DOCUMENTOS_PENDENTES', 'PENDING_DOCS'];
+
   const stats = {
     total: unlocks.length,
-    pending: unlocks.filter(u => ['SOLICITADO', 'DOCUMENTOS_PENDENTES', 'ANALISE_ORGAO', 'EM_PROCESSAMENTO'].includes(u.status)).length,
-    completed: unlocks.filter(u => u.status === 'CONCLUIDO').length,
-    rejected: unlocks.filter(u => u.status === 'REJEITADO').length,
-    documentsNeeded: unlocks.filter(u => u.status === 'DOCUMENTOS_PENDENTES').length,
-    totalValue: unlocks.reduce((sum, u) => sum + u.fees.total, 0)
-  }
+    pending: unlocks.filter(u => pendingStatuses.includes(u.status)).length,
+    completed: unlocks.filter(u => completedStatuses.includes(u.status)).length,
+    rejected: unlocks.filter(u => rejectedStatuses.includes(u.status)).length,
+    documentsNeeded: unlocks.filter(u => docsNeededStatuses.includes(u.status)).length,
+    totalValue: unlocks.reduce((sum, u) => sum + (u.fees?.total || 0), 0)
+  };
 
   return (
     
@@ -560,9 +607,9 @@ export default function UnlocksPage() {
 
         {/* Unlocks Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredUnlocks.map((unlock) => {
-            const docProgress = getDocumentProgress(unlock.documents)
-            
+          {filteredUnlocks.map((unlock, idx) => {
+            const docProgress = getDocumentProgress(unlock.documents);
+            const displayNumber = idx + 1;
             return (
               <motion.div
                 key={unlock.id}
@@ -575,7 +622,7 @@ export default function UnlocksPage() {
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">
-                        Desbloqueio #{unlock.id}
+                        Desbloqueio #{displayNumber}
                       </h3>
                       <p className="text-sm text-gray-600">{getTypeBadge(unlock.unlockType)}</p>
                     </div>

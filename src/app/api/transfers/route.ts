@@ -11,14 +11,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Fetch transfers using Prisma
+    // Filtra pelo tenantId do usuário logado
+    const tenantId = (session.user as any)?.tenantId || 'tenant-default';
     const transfers = await prisma.transfer.findMany({
       where: {
-        tenantId: 'tenant-default' // TODO: session.user.tenantId when multi-tenant is active
+        tenantId
       },
       orderBy: { createdAt: 'desc' }
     })
-
     return NextResponse.json(transfers)
   } catch (error) {
     console.error('Erro ao buscar transferências:', error)
@@ -68,9 +68,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Create transfer
+    const tenantId = (session.user as any)?.tenantId || 'tenant-default';
     const newTransfer = await prisma.transfer.create({
       data: {
-        tenantId: 'tenant-default', // TODO: session.user.tenantId when multi-tenant is active
+        tenantId,
         sellerId: body.sellerId || null,
         sellerName: body.sellerName,
         sellerCpf: body.sellerCpf,

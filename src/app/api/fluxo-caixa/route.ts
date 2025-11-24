@@ -18,9 +18,21 @@ export async function GET(request: NextRequest) {
     const tipo = searchParams.get('tipo')
     const mes = searchParams.get('mes') // Format: YYYY-MM
 
+    // Get tenant ID from database
+    const tenant = await prisma.tenant.findFirst({
+      orderBy: { createdAt: 'asc' }
+    })
+    
+    if (!tenant) {
+      return NextResponse.json(
+        { error: 'Tenant não encontrado' },
+        { status: 404 }
+      )
+    }
+
     // Build where clause
     const where: any = {
-      tenantId: 'tenant-default' // TODO: session.user.tenantId when multi-tenant is active
+      tenantId: tenant.id
     }
 
     if (tipo && tipo !== 'ALL') {
@@ -44,16 +56,15 @@ export async function GET(request: NextRequest) {
 
     // Calculate statistics
     const hoje = new Date()
-    const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`
-    const startDate = new Date(`${mesAtual}-01`)
-    const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0)
+    const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+    const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
     
     const lancamentosDoMes = await prisma.fluxoCaixa.findMany({
       where: {
-        tenantId: 'tenant-default',
+        tenantId: tenant.id,
         data: {
-          gte: startDate,
-          lte: endDate
+          gte: primeiroDiaMes,
+          lte: ultimoDiaMes
         }
       }
     })
@@ -70,7 +81,7 @@ export async function GET(request: NextRequest) {
 
     // Total geral (all time)
     const allLancamentos = await prisma.fluxoCaixa.findMany({
-      where: { tenantId: 'tenant-default' }
+      where: { tenantId: tenant.id }
     })
     
     const totalEntradas = allLancamentos
@@ -175,10 +186,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get tenant ID from database
+    const tenant = await prisma.tenant.findFirst({
+      orderBy: { createdAt: 'asc' }
+    })
+    
+    if (!tenant) {
+      return NextResponse.json(
+        { error: 'Tenant não encontrado' },
+        { status: 404 }
+      )
+    }
+
     // Create new entry
     const newLancamento = await prisma.fluxoCaixa.create({
       data: {
-        tenantId: 'tenant-default', // TODO: session.user.tenantId when multi-tenant is active
+        tenantId: tenant.id,
         tipo: data.tipo,
         descricao: data.descricao,
         categoria: data.categoria,

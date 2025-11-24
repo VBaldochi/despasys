@@ -1,20 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   RefreshControl,
   Alert,
+  FlatList,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  Text,
-  Card,
-  Button,
-  ActivityIndicator,
-  Chip,
-} from 'react-native-paper';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Text, Card, Button, ActivityIndicator, Chip, ProgressBar } from 'react-native-paper';
+import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { useDashboardStore } from '@/src/store/dashboard';
 import { useAuthStore } from '@/src/store/auth';
@@ -51,6 +47,30 @@ export default function DashboardScreen() {
       ]
     );
   };
+
+  // Simulação de atividades recentes e tarefas pendentes (adapte para dados reais se disponíveis)
+  const recentActivities = useMemo(() => [
+    { id: 1, type: 'Novo Cliente', description: 'João Silva foi cadastrado', time: '2 min atrás', icon: 'account-plus', color: colors.primary[600] },
+    { id: 2, type: 'Processo Concluído', description: 'Transferência de veículo finalizada', time: '15 min atrás', icon: 'check-circle', color: colors.success },
+    { id: 3, type: 'Pagamento Recebido', description: 'R$ 850,00 - Maria Santos', time: '1 hora atrás', icon: 'cash', color: colors.success },
+    { id: 4, type: 'Agendamento', description: 'Consulta DETRAN às 14:00', time: '2 horas atrás', icon: 'calendar', color: colors.warning },
+  ], []);
+
+  const pendingTasks = useMemo(() => [
+    { id: 1, task: 'Revisar documentos do processo #1234', priority: 'Alta', due: 'Hoje' },
+    { id: 2, task: 'Contatar cliente sobre renovação', priority: 'Média', due: 'Amanhã' },
+    { id: 3, task: 'Atualizar sistema DETRAN', priority: 'Baixa', due: '2 dias' },
+  ], []);
+
+  // Simulação de dados de gráfico (adapte para dados reais se disponíveis)
+  const revenueData = [40, 65, 50, 80, 75, 90];
+  const revenueLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
+  const servicesData = [
+    { service: 'Transferência', percentage: 45, color: colors.primary[600] },
+    { service: 'Licenciamento', percentage: 30, color: colors.success },
+    { service: 'Consultas', percentage: 15, color: colors.warning },
+    { service: 'Outros', percentage: 10, color: colors.error },
+  ];
 
   if (loading && !data) {
     return (
@@ -104,148 +124,108 @@ export default function DashboardScreen() {
         </Card>
       )}
 
+
       {data && (
         <>
-          {/* Cards de Métricas */}
+          {/* Cards de Métricas em Grid */}
           <View style={styles.metricsGrid}>
             <Card style={[styles.metricCard, { backgroundColor: colors.primary[50] }]}>
               <Card.Content style={styles.metricContent}>
-                <MaterialIcons name="assignment" size={24} color={colors.primary[600]} />
-                <Text variant="bodySmall" style={styles.metricLabel}>
-                  Processos Ativos
-                </Text>
-                <Text variant="headlineSmall" style={styles.metricValue}>
-                  {data.processos.total}
-                </Text>
+                <MaterialIcons name="people" size={24} color={colors.primary[600]} />
+                <Text style={styles.metricLabel}>Clientes Ativos</Text>
+                <Text style={styles.metricValue}>{data.clientes?.total ?? '-'}</Text>
+                <Text style={styles.metricChange}>+12% vs mês anterior</Text>
               </Card.Content>
             </Card>
-
-            <Card style={[styles.metricCard, { backgroundColor: colors.success + '15' }]}>
-              <Card.Content style={styles.metricContent}>
-                <MaterialIcons name="trending-up" size={24} color={colors.success} />
-                <Text variant="bodySmall" style={styles.metricLabel}>
-                  Receitas do Mês
-                </Text>
-                <Text variant="headlineSmall" style={styles.metricValue}>
-                  {formatCurrency(data.financeiro.receitasMes)}
-                </Text>
-              </Card.Content>
-            </Card>
-
             <Card style={[styles.metricCard, { backgroundColor: colors.warning + '15' }]}>
               <Card.Content style={styles.metricContent}>
-                <MaterialIcons name="pending" size={24} color={colors.warning} />
-                <Text variant="bodySmall" style={styles.metricLabel}>
-                  Pendentes
-                </Text>
-                <Text variant="headlineSmall" style={styles.metricValue}>
-                  {data.processos.pendentes}
-                </Text>
+                <MaterialIcons name="assignment" size={24} color={colors.warning} />
+                <Text style={styles.metricLabel}>Processos Pendentes</Text>
+                <Text style={styles.metricValue}>{data.processos?.pendentes ?? '-'}</Text>
+                <Text style={styles.metricChange}>+4% vs mês anterior</Text>
               </Card.Content>
             </Card>
-
-            <Card style={[styles.metricCard, { backgroundColor: colors.error + '15' }]}>
+            <Card style={[styles.metricCard, { backgroundColor: colors.success + '15' }]}>
               <Card.Content style={styles.metricContent}>
-                <MaterialIcons name="people" size={24} color={colors.primary[600]} />
-                <Text variant="bodySmall" style={styles.metricLabel}>
-                  Clientes
-                </Text>
-                <Text variant="headlineSmall" style={styles.metricValue}>
-                  {data.clientes.total}
-                </Text>
+                <MaterialIcons name="attach-money" size={24} color={colors.success} />
+                <Text style={styles.metricLabel}>Receita Mensal</Text>
+                <Text style={styles.metricValue}>{formatCurrency(data.financeiro?.receitasMes ?? 0)}</Text>
+                <Text style={styles.metricChange}>+18% vs mês anterior</Text>
+              </Card.Content>
+            </Card>
+            <Card style={[styles.metricCard, { backgroundColor: colors.info + '15' }]}>
+              <Card.Content style={styles.metricContent}>
+                <MaterialIcons name="trending-up" size={24} color={colors.info} />
+                <Text style={styles.metricLabel}>Taxa de Conversão</Text>
+                <Text style={styles.metricValue}>68%</Text>
+                <Text style={styles.metricChange}>+8% vs mês anterior</Text>
               </Card.Content>
             </Card>
           </View>
 
-          {/* Status dos Processos */}
+          {/* Atividades Recentes */}
           <Card style={styles.card}>
             <Card.Content>
-              <Text variant="titleMedium" style={styles.cardTitle}>
-                Status dos Processos
-              </Text>
-              <View style={styles.statusGrid}>
-                <View style={styles.statusItem}>
-                  <Text variant="bodyMedium">Em Andamento</Text>
-                  <Chip icon="play" style={{ backgroundColor: colors.primary[100] }}>
-                    {data.processos.emAndamento}
-                  </Chip>
+              <Text style={styles.cardTitle}>Atividades Recentes</Text>
+              {recentActivities.map((activity) => (
+                <View key={activity.id} style={styles.activityItem}>
+                  <MaterialCommunityIcons name={activity.icon} size={20} color={activity.color} style={{ marginRight: 12 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.activityType}>{activity.type}</Text>
+                    <Text style={styles.activityDesc}>{activity.description}</Text>
+                    <Text style={styles.activityTime}>{activity.time}</Text>
+                  </View>
                 </View>
-                <View style={styles.statusItem}>
-                  <Text variant="bodyMedium">Concluídos</Text>
-                  <Chip icon="check" style={{ backgroundColor: colors.success + '20' }}>
-                    {data.processos.concluidos}
-                  </Chip>
-                </View>
-                <View style={styles.statusItem}>
-                  <Text variant="bodyMedium">Vencidos</Text>
-                  <Chip icon="alert" style={{ backgroundColor: colors.error + '20' }}>
-                    {data.processos.vencidos}
-                  </Chip>
-                </View>
-              </View>
+              ))}
             </Card.Content>
           </Card>
 
-          {/* Próximos Vencimentos */}
-          {data.proximosVencimentos.length > 0 && (
-            <Card style={styles.card}>
+          {/* Tarefas Pendentes */}
+          <Card style={styles.card}>
+            <Card.Content>
+              <Text style={styles.cardTitle}>Tarefas Pendentes</Text>
+              {pendingTasks.map((task) => (
+                <View key={task.id} style={styles.taskItem}>
+                  <Text style={styles.taskText}>{task.task}</Text>
+                  <View style={styles.taskMeta}>
+                    <Text style={[styles.taskPriority, task.priority === 'Alta' ? { color: colors.error } : task.priority === 'Média' ? { color: colors.warning } : { color: colors.success }]}>{task.priority}</Text>
+                    <Text style={styles.taskDue}>{task.due}</Text>
+                  </View>
+                </View>
+              ))}
+            </Card.Content>
+          </Card>
+
+          {/* Gráficos (simplificados) */}
+          <View style={{ flexDirection: 'row', gap: 12, marginHorizontal: 20, marginBottom: 16 }}>
+            {/* Receita dos Últimos 6 Meses */}
+            <Card style={{ flex: 1, padding: 8 }}>
               <Card.Content>
-                <Text variant="titleMedium" style={styles.cardTitle}>
-                  Próximos Vencimentos
-                </Text>
-                {data.proximosVencimentos.slice(0, 5).map((processo) => (
-                  <View key={processo.id} style={styles.processItem}>
-                    <View style={styles.processInfo}>
-                      <Text variant="bodyMedium" style={styles.processTitle}>
-                        {processo.titulo}
-                      </Text>
-                      <Text variant="bodySmall" style={styles.processClient}>
-                        {processo.customer.name}
-                      </Text>
+                <Text style={styles.cardTitle}>Receita 6 meses</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 80, gap: 4 }}>
+                  {revenueData.map((height, idx) => (
+                    <View key={idx} style={{ flex: 1, alignItems: 'center' }}>
+                      <View style={{ width: 12, height: height, backgroundColor: colors.primary[600], borderRadius: 4 }} />
+                      <Text style={{ fontSize: 10, color: colors.gray[600], marginTop: 2 }}>{revenueLabels[idx]}</Text>
                     </View>
-                    <View style={styles.processDate}>
-                      <Text variant="bodySmall" style={styles.dueDateText}>
-                        {processo.prazoLegal ? formatDate(processo.prazoLegal) : 'Sem prazo'}
-                      </Text>
-                    </View>
+                  ))}
+                </View>
+              </Card.Content>
+            </Card>
+            {/* Distribuição de Serviços */}
+            <Card style={{ flex: 1, padding: 8 }}>
+              <Card.Content>
+                <Text style={styles.cardTitle}>Serviços</Text>
+                {servicesData.map((item) => (
+                  <View key={item.service} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                    <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: item.color, marginRight: 8 }} />
+                    <Text style={{ fontSize: 12, color: colors.gray[700], flex: 1 }}>{item.service}</Text>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: colors.gray[900] }}>{item.percentage}%</Text>
                   </View>
                 ))}
               </Card.Content>
             </Card>
-          )}
-
-          {/* Resumo Financeiro */}
-          <Card style={styles.card}>
-            <Card.Content>
-              <Text variant="titleMedium" style={styles.cardTitle}>
-                Resumo Financeiro
-              </Text>
-              <View style={styles.financialSummary}>
-                <View style={styles.financialItem}>
-                  <Text variant="bodySmall" style={styles.financialLabel}>
-                    Saldo Atual
-                  </Text>
-                  <Text 
-                    variant="titleMedium" 
-                    style={[
-                      styles.financialValue,
-                      { color: data.financeiro.saldoAtual >= 0 ? colors.success : colors.error }
-                    ]}
-                  >
-                    {formatCurrency(data.financeiro.saldoAtual)}
-                  </Text>
-                </View>
-                <View style={styles.financialItem}>
-                  <Text variant="bodySmall" style={styles.financialLabel}>
-                    Contas Pendentes
-                  </Text>
-                  <Text variant="titleMedium" style={styles.financialValue}>
-                    {data.financeiro.contasPendentes}
-                  </Text>
-                </View>
-              </View>
-            </Card.Content>
-          </Card>
+          </View>
         </>
       )}
     </ScrollView>

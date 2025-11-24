@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { Plus, Search, Filter, MoreHorizontal, User, Building, Phone, Mail, MapPin } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Plus, Search, Filter, MoreHorizontal, User, Building, Phone, Mail, MapPin, Eye } from 'lucide-react'
 import { ProtectedRoute } from '@/components/common/ProtectedRoute'
 import NovoClienteModal from '@/components/admin/NovoClienteModal'
 
@@ -64,6 +65,7 @@ const clientesMock: Cliente[] = [
 ]
 
 function ClientesPage() {
+  const router = useRouter()
   const { data: session } = useSession()
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
@@ -361,9 +363,18 @@ function ClientesPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <button className="text-gray-400 hover:text-gray-600 transition-colors">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-2 justify-end">
+                        <button
+                          onClick={() => router.push(`/admin/clientes/${cliente.id}`)}
+                          className="text-blue-600 hover:text-blue-800 transition-colors p-1"
+                          title="Ver detalhes e recomendações ML"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

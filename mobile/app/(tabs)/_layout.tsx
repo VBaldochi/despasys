@@ -1,3 +1,4 @@
+  <Tabs.Screen name="processo-detalhe" options={{ href: null }} />
 import { Tabs, Redirect } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
@@ -65,16 +66,6 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Veículos - Gerenciamento de veículos em processo */}
-      <Tabs.Screen
-        name="veiculos"
-        options={{
-          title: 'Veículos',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="directions-car" size={size} color={color} />
-          ),
-        }}
-      />
 
       {/* Clientes - Lista e contatos dos clientes */}
       <Tabs.Screen
@@ -87,6 +78,7 @@ export default function TabLayout() {
         }}
       />
 
+
       {/* Débitos - Consulta de débitos veiculares */}
       <Tabs.Screen
         name="debitos"
@@ -94,6 +86,17 @@ export default function TabLayout() {
           title: 'Débitos',
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="receipt-long" size={size} color={color} />
+          ),
+        }}
+      />
+
+      {/* Processos - Lista de processos */}
+      <Tabs.Screen
+        name="processos"
+        options={{
+          title: 'Processos',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="assignment" size={size} color={color} />
           ),
         }}
       />
@@ -116,6 +119,9 @@ export default function TabLayout() {
           href: null, // Remove da navegação
         }}
       />
+      <Tabs.Screen name="novo-cliente" options={{ href: null }} />
+      <Tabs.Screen name="novo-veiculo" options={{ href: null }} />
+      <Tabs.Screen name="novo-debito" options={{ href: null }} />
     </Tabs>
     </>
   );

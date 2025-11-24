@@ -1,32 +1,7 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
-  TextInput, 
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator 
-} from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-
-interface Debito {
-  tipo: 'IPVA' | 'MULTA' | 'DPVAT' | 'LICENCIAMENTO';
-  descricao: string;
-  valor: number;
-  vencimento: string;
-  orgao: string;
-  status: 'PENDENTE' | 'VENCIDO' | 'QUITADO';
-}
-
-interface ConsultaResult {
-  placa: string;
-  debitos: Debito[];
-  totalPendente: number;
-  ultimaConsulta: string;
-}
 
 export default function DebitosScreen() {
   const [placa, setPlaca] = useState('');

@@ -1,6 +1,9 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { useSessionSync } from '@/hooks/useSessionSync'
+import { useProcessosRealtimeSyncWeb, DespaSysEvent } from '@/hooks/useProcessosRealtimeSyncWeb'
+import { useToastHelpers } from '@/components/ui/Toast'
 import { 
   FileText, 
   Plus, 
@@ -20,6 +23,31 @@ import {
 import NovoProcessoModal from '@/components/admin/NovoProcessoModal'
 
 export default function ProcessosPage() {
+  const toast = useToastHelpers()
+  const { session } = useSessionSync()
+  const tenantId = session?.user?.tenantId || session?.tenantId || 'defaultTenant'
+
+  // Atualiza lista de processos em tempo real
+  const handleProcessEvent = useCallback((event: DespaSysEvent) => {
+    setProcessos(prev => {
+      if (event.action === 'created') {
+        if (prev.some(p => p.id === event.data.id)) return prev
+        toast.success('Novo processo criado', `Processo ${event.data.id || ''} adicionado.`)
+        return [event.data, ...prev]
+      }
+      if (event.action === 'updated') {
+        toast.info('Processo atualizado', `Processo ${event.data.id || ''} foi atualizado.`)
+        return prev.map(p => p.id === event.data.id ? { ...p, ...event.data } : p)
+      }
+      if (event.action === 'deleted') {
+        toast.warning('Processo removido', `Processo ${event.data.id || ''} foi removido.`)
+        return prev.filter(p => p.id !== event.data.id)
+      }
+      return prev
+    })
+  }, [toast])
+
+  useProcessosRealtimeSyncWeb(tenantId, handleProcessEvent)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('todos')
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -39,13 +67,13 @@ export default function ProcessosPage() {
         const data = await response.json()
         setProcessos(data.map((p: any) => ({
           id: p.numero || p.id,
-          tipo: p.tipo || 'Sem tipo',
+          tipo: p.titulo || p.tipoServico || 'Sem tipo',
           cliente: p.customer?.name || 'Cliente não informado',
-          veiculo: p.veiculo?.placa ? `${p.veiculo.modelo} ${p.veiculo.ano}` : '-',
-          status: p.status?.toLowerCase() || 'pendente',
-          dataInicio: new Date(p.createdAt).toLocaleDateString('pt-BR'),
-          prazo: p.prazo ? new Date(p.prazo).toLocaleDateString('pt-BR') : '-',
-          valor: p.valor || 0
+          veiculo: p.veiculo?.placa ? `${p.veiculo.modelo} (${p.veiculo.ano})` : '-',
+          status: p.status ? p.status.toLowerCase().replace(/_/g, '_') : 'pendente',
+          dataInicio: p.dataInicio ? new Date(p.dataInicio).toLocaleDateString('pt-BR') : new Date(p.createdAt).toLocaleDateString('pt-BR'),
+          prazo: p.prazoLegal ? new Date(p.prazoLegal).toLocaleDateString('pt-BR') : '-',
+          valor: p.valorTotal || 0
         })))
       } else {
         console.error('Erro ao buscar processos')
@@ -82,18 +110,25 @@ export default function ProcessosPage() {
   }
 
   const getStatusInfo = (status: string) => {
-    switch (status) {
-      case 'concluido':
-        return { icon: CheckCircle, text: 'Concluído', color: 'text-green-600 bg-green-100' }
-      case 'em_andamento':
-        return { icon: Clock, text: 'Em Andamento', color: 'text-blue-600 bg-blue-100' }
-      case 'pendente':
-        return { icon: AlertCircle, text: 'Pendente', color: 'text-yellow-600 bg-yellow-100' }
-      case 'atrasado':
-        return { icon: XCircle, text: 'Atrasado', color: 'text-red-600 bg-red-100' }
-      default:
-        return { icon: Clock, text: 'Indefinido', color: 'text-gray-600 bg-gray-100' }
+    const normalizedStatus = status.toLowerCase()
+    
+    // Mapeamento dos status do banco para display
+    if (normalizedStatus.includes('finalizado') || normalizedStatus.includes('concluido')) {
+      return { icon: CheckCircle, text: 'Concluído', color: 'text-green-600 bg-green-100' }
     }
+    if (normalizedStatus.includes('processamento') || normalizedStatus.includes('andamento') || 
+        normalizedStatus.includes('analise') || normalizedStatus.includes('vistoria')) {
+      return { icon: Clock, text: 'Em Andamento', color: 'text-blue-600 bg-blue-100' }
+    }
+    if (normalizedStatus.includes('aguardando') || normalizedStatus.includes('pendente') || 
+        normalizedStatus.includes('recebidos')) {
+      return { icon: AlertCircle, text: 'Pendente', color: 'text-yellow-600 bg-yellow-100' }
+    }
+    if (normalizedStatus.includes('cancelado') || normalizedStatus.includes('erro')) {
+      return { icon: XCircle, text: 'Cancelado', color: 'text-red-600 bg-red-100' }
+    }
+    
+    return { icon: Clock, text: status || 'Indefinido', color: 'text-gray-600 bg-gray-100' }
   }
 
   const filteredProcessos = processos.filter(processo => {
@@ -101,9 +136,32 @@ export default function ProcessosPage() {
                          processo.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          processo.tipo.toLowerCase().includes(searchTerm.toLowerCase())
     
-    const matchesStatus = statusFilter === 'todos' || processo.status === statusFilter
+    if (statusFilter === 'todos') {
+      return matchesSearch
+    }
     
-    return matchesSearch && matchesStatus
+    const normalizedStatus = processo.status.toLowerCase()
+    
+    // Filtros inteligentes
+    if (statusFilter === 'pendente' && 
+        (normalizedStatus.includes('aguardando') || normalizedStatus.includes('pendente') || normalizedStatus.includes('recebidos'))) {
+      return matchesSearch
+    }
+    if (statusFilter === 'em_andamento' && 
+        (normalizedStatus.includes('processamento') || normalizedStatus.includes('andamento') || 
+         normalizedStatus.includes('analise') || normalizedStatus.includes('vistoria'))) {
+      return matchesSearch
+    }
+    if (statusFilter === 'concluido' && 
+        (normalizedStatus.includes('finalizado') || normalizedStatus.includes('concluido'))) {
+      return matchesSearch
+    }
+    if (statusFilter === 'cancelado' && 
+        (normalizedStatus.includes('cancelado') || normalizedStatus.includes('erro'))) {
+      return matchesSearch
+    }
+    
+    return false
   })
 
   return (
@@ -153,7 +211,7 @@ export default function ProcessosPage() {
               <option value="pendente">Pendente</option>
               <option value="em_andamento">Em Andamento</option>
               <option value="concluido">Concluído</option>
-              <option value="atrasado">Atrasado</option>
+              <option value="cancelado">Cancelado</option>
             </select>
           </div>
         </div>
@@ -176,7 +234,10 @@ export default function ProcessosPage() {
             <div>
               <p className="text-sm text-gray-600">Em Andamento</p>
               <p className="text-2xl font-semibold text-blue-600">
-                {processos.filter(p => p.status === 'em_andamento').length}
+                {processos.filter(p => {
+                  const s = p.status.toLowerCase()
+                  return s.includes('processamento') || s.includes('andamento') || s.includes('analise') || s.includes('vistoria')
+                }).length}
               </p>
             </div>
             <Clock className="h-8 w-8 text-blue-600" />
@@ -188,7 +249,10 @@ export default function ProcessosPage() {
             <div>
               <p className="text-sm text-gray-600">Concluídos</p>
               <p className="text-2xl font-semibold text-green-600">
-                {processos.filter(p => p.status === 'concluido').length}
+                {processos.filter(p => {
+                  const s = p.status.toLowerCase()
+                  return s.includes('finalizado') || s.includes('concluido')
+                }).length}
               </p>
             </div>
             <CheckCircle className="h-8 w-8 text-green-600" />
@@ -198,12 +262,15 @@ export default function ProcessosPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Atrasados</p>
-              <p className="text-2xl font-semibold text-red-600">
-                {processos.filter(p => p.status === 'atrasado').length}
+              <p className="text-sm text-gray-600">Pendentes</p>
+              <p className="text-2xl font-semibold text-yellow-600">
+                {processos.filter(p => {
+                  const s = p.status.toLowerCase()
+                  return s.includes('aguardando') || s.includes('pendente') || s.includes('recebidos')
+                }).length}
               </p>
             </div>
-            <XCircle className="h-8 w-8 text-red-600" />
+            <AlertCircle className="h-8 w-8 text-yellow-600" />
           </div>
         </div>
       </div>
@@ -257,9 +324,6 @@ export default function ProcessosPage() {
                     </td>
                     <td className="py-4 px-6">
                       <div className="text-gray-900">{processo.prazo}</div>
-                      {processo.status === 'atrasado' && (
-                        <div className="text-xs text-red-600">Vencido</div>
-                      )}
                     </td>
                     <td className="py-4 px-6">
                       <div className="text-gray-900 font-medium">
@@ -268,13 +332,29 @@ export default function ProcessosPage() {
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center space-x-2">
-                        <button className="text-blue-600 hover:text-blue-800 p-1">
+                        <button 
+                          onClick={() => alert(`Ver detalhes do processo ${processo.id}`)}
+                          className="text-blue-600 hover:text-blue-800 p-1"
+                          title="Ver detalhes"
+                        >
                           <Eye className="h-4 w-4" />
                         </button>
-                        <button className="text-green-600 hover:text-green-800 p-1">
+                        <button 
+                          onClick={() => alert(`Editar processo ${processo.id}`)}
+                          className="text-green-600 hover:text-green-800 p-1"
+                          title="Editar"
+                        >
                           <Edit className="h-4 w-4" />
                         </button>
-                        <button className="text-red-600 hover:text-red-800 p-1">
+                        <button 
+                          onClick={() => {
+                            if (confirm(`Tem certeza que deseja excluir o processo ${processo.id}?`)) {
+                              alert(`Excluir processo ${processo.id}`)
+                            }
+                          }}
+                          className="text-red-600 hover:text-red-800 p-1"
+                          title="Excluir"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>

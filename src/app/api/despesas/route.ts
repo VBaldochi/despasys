@@ -18,9 +18,21 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const tipoDespesa = searchParams.get('tipoDespesa')
 
+    // Get tenant ID from database
+    const tenant = await prisma.tenant.findFirst({
+      orderBy: { createdAt: 'asc' }
+    })
+    
+    if (!tenant) {
+      return NextResponse.json(
+        { error: 'Tenant não encontrado' },
+        { status: 404 }
+      )
+    }
+
     // Build where clause
     const where: any = {
-      // tenantId: session.user.tenantId // TODO: Get from session when multi-tenant is active
+      tenantId: tenant.id
     }
 
     if (status && status !== 'ALL') {
@@ -33,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch all expenses for stats (without filters)
     const allDespesas = await prisma.despesa.findMany({
-      // where: { tenantId: session.user.tenantId },
+      where: { tenantId: tenant.id },
       orderBy: { dataVencimento: 'desc' }
     })
 
@@ -44,24 +56,32 @@ export async function GET(request: NextRequest) {
     })
 
     // Calculate statistics
+    const hoje = new Date()
+    const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+    const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
+    
+    const despesasDoMes = allDespesas.filter(d => {
+      const vencimento = new Date(d.dataVencimento)
+      return vencimento >= primeiroDiaMes && vencimento <= ultimoDiaMes
+    })
+    
     const totalDespesas = allDespesas.reduce((sum, d) => sum + d.valor, 0)
     
-    const emDia = allDespesas
-      .filter(d => d.status === 'PAGA')
+    const emDia = despesasDoMes
+      .filter(d => d.status === 'PAGO' || d.status === 'PAGA')
       .reduce((sum, d) => sum + d.valor, 0)
     
-    const vencendo = allDespesas
+    const vencendo = despesasDoMes
       .filter(d => {
-        if (d.status !== 'EM_ABERTO') return false
+        if (d.status === 'PAGO' || d.status === 'PAGA' || d.status === 'VENCIDA' || d.status === 'VENCIDO') return false
         const vencimento = new Date(d.dataVencimento)
-        const hoje = new Date()
         const diasAteVencimento = Math.ceil((vencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
         return diasAteVencimento >= 0 && diasAteVencimento <= 7
       })
       .reduce((sum, d) => sum + d.valor, 0)
     
-    const vencidas = allDespesas
-      .filter(d => d.status === 'VENCIDA')
+    const vencidas = despesasDoMes
+      .filter(d => d.status === 'VENCIDA' || d.status === 'VENCIDO')
       .reduce((sum, d) => sum + d.valor, 0)
 
     // Category breakdown
@@ -148,6 +168,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get tenant ID from database
+    const tenant = await prisma.tenant.findFirst({
+      orderBy: { createdAt: 'asc' }
+    })
+    
+    if (!tenant) {
+      return NextResponse.json(
+        { error: 'Tenant não encontrado' },
+        { status: 404 }
+      )
+    }
+
     // Determine status based on dates
     const today = new Date()
     const vencimento = new Date(data.dataVencimento)
@@ -160,7 +192,7 @@ export async function POST(request: NextRequest) {
     // Create new expense
     const newDespesa = await prisma.despesa.create({
       data: {
-        tenantId: 'tenant-default', // TODO: session.user.tenantId when multi-tenant is active
+        tenantId: tenant.id,
         fornecedor: data.fornecedor,
         descricao: data.descricao,
         categoria: data.categoria,

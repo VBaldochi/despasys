@@ -48,28 +48,32 @@ SessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSe
 
 # ---------- DB Base ----------
 class Base(DeclarativeBase):
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    pass
 
+# Tenant table already exists from Prisma (uses camelCase)
 class Tenant(Base):
     __tablename__ = "tenants"
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    slug: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    id: Mapped[str] = mapped_column(String(30), primary_key=True)
+    domain: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(120))
+    # No created_at/updated_at - Prisma uses createdAt/updatedAt but we don't need them
 
+# MlModel table will be created by SQLAlchemy (uses snake_case)
 class MlModel(Base):
     __tablename__ = "ml_models"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
+    tenant_id: Mapped[str] = mapped_column(String(30), ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
     classes_json: Mapped[List[str]] = mapped_column(JSONB, default=list)
     feature_cols_json: Mapped[List[str]] = mapped_column(JSONB, default=list)
     model_blob: Mapped[bytes] = mapped_column(LargeBinary)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
 # ---------- Schemas ----------
 DEFAULT_SERVICES = ["LICENCIAMENTO", "VISTORIA", "TRANSFERENCIA", "DESBLOQUEIOS"]
 
 class TenantCreate(BaseModel):
-    slug: str = Field(min_length=2, max_length=64)
+    domain: str = Field(min_length=2, max_length=64)
     name: str = Field(min_length=2, max_length=120)
 
 class ClientInfo(BaseModel):
@@ -128,11 +132,11 @@ async def get_tenant_id(
     x_tenant: Annotated[Optional[str], Header(alias="X-Tenant", convert_underscores=False)] = None,
     tenant_q: Optional[str] = Query(default=None, alias="tenant"),
     db: Annotated[AsyncSession, Depends(get_db)] = None
-) -> int:
-    slug = x_tenant or tenant_q
-    if not slug:
+) -> str:
+    domain = x_tenant or tenant_q
+    if not domain:
         raise HTTPException(status_code=400, detail="Tenant não informado (X-Tenant ou ?tenant=)")
-    row = (await db.execute(select(Tenant).where(Tenant.slug == slug))).scalar_one_or_none()
+    row = (await db.execute(select(Tenant).where(Tenant.domain == domain))).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Tenant não encontrado")
     return row.id
@@ -150,7 +154,7 @@ async def get_current_user(authorization: Annotated[Optional[str], Header(alias=
     except JWTError as e:
         raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
 
-async def load_latest_model(db: AsyncSession, tenant_id: int) -> Optional[MlModel]:
+async def load_latest_model(db: AsyncSession, tenant_id: str) -> Optional[MlModel]:
     stmt = select(MlModel).where(MlModel.tenant_id == tenant_id).order_by(MlModel.id.desc()).limit(1)
     return (await db.execute(stmt)).scalar_one_or_none()
 
@@ -175,7 +179,7 @@ def featurize(client: ClientInfo, vehicle: VehicleInfo, hist: Dict[str, int], hi
     return row
 
 # helper para treinar a partir de linhas pré-featurizadas
-async def _train_from_rows(db: AsyncSession, tenant_id: int, rows: list[dict], targets: list[str]):
+async def _train_from_rows(db: AsyncSession, tenant_id: str, rows: list[dict], targets: list[str]):
     if not rows or not targets:
         raise HTTPException(status_code=400, detail="Dataset vazio")
     X = pd.DataFrame(rows)
@@ -204,10 +208,10 @@ async def healthz():
 # --- Seed/tenant util ---
 @app.post("/dev/ensure-tenant")
 async def ensure_tenant(body: TenantCreate, db: Annotated[AsyncSession, Depends(get_db)]):
-    row = (await db.execute(select(Tenant).where(Tenant.slug == body.slug))).scalar_one_or_none()
+    row = (await db.execute(select(Tenant).where(Tenant.domain == body.domain))).scalar_one_or_none()
     if row:
         return {"status": "exists", "tenant_id": row.id}
-    t = Tenant(slug=body.slug, name=body.name)
+    t = Tenant(domain=body.domain, name=body.name)
     db.add(t); await db.commit(); await db.refresh(t)
     return {"status": "created", "tenant_id": t.id}
 

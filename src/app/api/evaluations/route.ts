@@ -11,14 +11,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    // Fetch evaluations using Prisma
+    // Filtra pelo tenantId do usuário logado
+    const tenantId = (session.user as any)?.tenantId || 'tenant-default';
     const evaluations = await prisma.evaluation.findMany({
       where: {
-        tenantId: 'tenant-default' // TODO: session.user.tenantId when multi-tenant is active
+        tenantId
       },
       orderBy: { requestedDate: 'desc' }
     });
-
     return NextResponse.json(evaluations);
   } catch (error) {
     console.error('Erro ao buscar avaliações:', error);
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     // Create evaluation
     const evaluation = await prisma.evaluation.create({
       data: {
-        tenantId: 'tenant-default', // TODO: session.user.tenantId when multi-tenant is active
+        tenantId,
         customerId: customerId || null,
         customerName,
         customerPhone,

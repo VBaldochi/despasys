@@ -11,14 +11,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Fetch licensings using Prisma
+    // Filtra pelo tenantId do usuário logado
+    const tenantId = (session.user as any)?.tenantId || 'tenant-default';
     const licensings = await prisma.licensing.findMany({
       where: {
-        tenantId: 'tenant-default' // TODO: session.user.tenantId when multi-tenant is active
+        tenantId
       },
       orderBy: { createdAt: 'desc' }
     })
-
     return NextResponse.json(licensings)
   } catch (error) {
     console.error('Erro ao buscar licenciamentos:', error)
@@ -69,9 +69,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Create licensing
+    const tenantId = (session.user as any)?.tenantId || 'tenant-default';
     const newLicensing = await prisma.licensing.create({
       data: {
-        tenantId: 'tenant-default', // TODO: session.user.tenantId when multi-tenant is active
+        tenantId,
         customerId: body.customerId || null,
         customerName: body.customerName,
         vehiclePlate: body.vehiclePlate,

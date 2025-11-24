@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Search, User, Car, FileText, Calendar, DollarSign } from 'lucide-react'
+import { X, Search, User, Car, FileText, Calendar, DollarSign, Sparkles } from 'lucide-react'
+import { MLRecommendations } from '@/components/MLRecommendations'
 
 interface NovoProcessoModalProps {
   isOpen: boolean
@@ -216,6 +217,26 @@ export default function NovoProcessoModal({ isOpen, onClose, onSubmit }: NovoPro
               </select>
             </div>
           </div>
+
+          {/* ML Recommendations - Aparece quando seleciona cliente */}
+          {formData.customerId && (
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 border-2 border-purple-200">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-5 w-5 text-purple-600" />
+                <h3 className="text-sm font-semibold text-gray-900">Sugestões Inteligentes</h3>
+              </div>
+              <p className="text-xs text-gray-600 mb-3">
+                Com base no histórico do cliente, recomendamos:
+              </p>
+              <MLRecommendations
+                customerId={formData.customerId}
+                vehicleId={formData.veiculoId || undefined}
+                onServiceSelect={(service) => {
+                  setFormData({ ...formData, tipo: service })
+                }}
+              />
+            </div>
+          )}
 
           {/* Veículo (Opcional) */}
           <div>
